@@ -1,0 +1,301 @@
+# Canonical Oracle 18c evidence for common application migration SQL shapes.
+# Supported shapes stay narrow; neighboring ambiguous forms remain fail-closed.
+version = 1
+feature = "migration-shapes"
+
+[[case]]
+id = "plsql.single-dml"
+title = "Anonymous PL/SQL block containing one UPDATE"
+kind = "update"
+compare = "update"
+sql = """
+BEGIN
+  UPDATE bs_dml
+     SET note = 'ACTIVE'
+   WHERE id = ?;
+END;
+"""
+observe_sql = """
+SELECT id, note FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "1"
+
+[[case]]
+id = "outer-join.multiple-parent"
+title = "One optional (+) relation constrained by two mandatory parents"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT e.empno, l.location_id, d.dname
+  FROM bs_emp e, bs_location l, bs_dept d
+ WHERE e.deptno = d.deptno(+)
+   AND l.location_id = d.location_id(+)
+ ORDER BY e.empno, l.location_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "outer-join.multiple-parent-chain"
+title = "Multi-parent optional relation followed by an optional child"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT e.empno, l.location_id, d.dname, s.job
+  FROM bs_emp e, bs_location l, bs_dept d, bs_sales s
+ WHERE e.deptno = d.deptno(+)
+   AND l.location_id = d.location_id(+)
+   AND d.deptno = s.deptno(+)
+   AND s.job(+) = 'DEV'
+ ORDER BY e.empno, l.location_id, d.dname, s.job
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "to-char.number-format"
+title = "TO_CHAR numeric column with deterministic 9/0 model"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, TO_CHAR(amount, '9990.00') AS formatted
+  FROM bs_dml
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "to-char.date-day-arithmetic"
+title = "TO_CHAR over known DATE day arithmetic"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(TO_DATE(?, 'YYYYMMDD') + 1, 'YYYYMMDD') AS value
+  FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "20260818"
+
+[[case]]
+id = "to-char.typed-date-column"
+title = "TO_CHAR date format dispatches from a derived DATE column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(date_value, 'YYYYMMDD') AS value
+  FROM (SELECT DATE '2026-08-18' AS date_value FROM dual)
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "to-char.typed-text-column-error"
+title = "TO_CHAR date model on a derived character column preserves ORA-01481"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_CHAR(date_value, 'YYYYMMDD') AS value
+  FROM (SELECT CAST('20260818' AS VARCHAR(8)) AS date_value FROM dual)
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1481
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.aggregate-ordered-first"
+title = "Aggregate consumes one row from an ordered inline view"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MAX(empno) AS value
+  FROM (
+    SELECT empno
+      FROM bs_emp
+     ORDER BY empno DESC
+  )
+ WHERE ROWNUM = 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.aggregate-boundary"
+title = "Aggregate ROWNUM without an ordered inline source remains fail-closed"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MAX(hired)
+  FROM bs_emp
+ WHERE ROWNUM <= 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "ROWNUM_CARDINALITY"
+reason = "Aggregate ROWNUM is supported only for the represented ordered-inline-view plus ROWNUM = 1 shape."
+
+[[case]]
+id = "rownum.projected-upper"
+title = "Projected ROWNUM with a direct upper bound"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROWNUM, e.empno
+  FROM bs_emp e
+ WHERE ROWNUM <= 4
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.projected-qualified-order"
+title = "Projected ROWNUM uses a qualified order from its inline source"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROWNUM AS rn, q.*
+  FROM (
+    SELECT empno, sal
+      FROM bs_emp
+     ORDER BY bs_emp.sal DESC
+  ) q
+ WHERE ROWNUM <= ?
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "3"
+
+[[case]]
+id = "decode.numeric-expression-first-result"
+title = "DECODE numeric arithmetic first result anchors numeric output"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COALESCE(
+         SUM(DECODE(job, 'DEV', sal * -1, 'OPS', sal)),
+         0
+       ) AS value
+  FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "decode.column-result-boundary"
+title = "DECODE with a bare column first result remains fail-closed"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DECODE(job, 'DEV', sal, 'OPS', 0, 0)
+  FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "DECODE"
+reason = "A bare column first result does not prove the Oracle result family without schema metadata; only the represented bounded numeric expression anchor is admitted."
+
+[[case]]
+id = "optimizer-hint.use-hash"
+title = "USE_HASH optimizer hint is advisory and result-neutral"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT /*+ USE_HASH(e d) */ e.empno, d.dname
+  FROM bs_emp e
+  JOIN bs_dept d ON d.deptno = e.deptno
+ ORDER BY e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "optimizer-hint.common-advisory"
+title = "Reviewed advisory optimizer hints are stripped together"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT /*+ GATHER_PLAN_STATISTICS INDEX(e) LEADING(e d) USE_NL(d) */ e.empno, d.dname
+  FROM bs_emp e
+  JOIN bs_dept d ON d.deptno = e.deptno
+ ORDER BY e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

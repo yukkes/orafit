@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify tag is exact main version
+        run: |
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          version="$(sed -n '0,/<version>/{s:.*<version>\(.*\)</version>.*:\1:p}' pom.xml | head -1)"
+          test "$GITHUB_REF_NAME" = "v$version"
+      - name: Require successful exact-main CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in {1..18}; do
+            run_id="$(gh run list --workflow ci.yml --branch main --event push \
+              --commit "$GITHUB_SHA" --json databaseId --jq '.[0].databaseId // empty')"
+            [[ -n "$run_id" ]] && break
+            sleep 10
+          done
+          [[ -n "$run_id" ]]
+          gh run watch "$run_id" --exit-status --compact
+      - run: ./mvnw clean verify
+      - name: Package release assets
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          test -f "target/orafit-jdbc-$version-runtime.tar.gz"
+          (cd target && sha256sum "orafit-jdbc-$version.jar" "orafit-jdbc-$version-runtime.tar.gz" > SHA256SUMS)
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          args=(--generate-notes --verify-tag)
+          [[ "$version" == *-rc.* ]] && args+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" \
+            "target/orafit-jdbc-$version.jar" \
+            "target/orafit-jdbc-$version-runtime.tar.gz" \
+            target/SHA256SUMS \
+            "${args[@]}"

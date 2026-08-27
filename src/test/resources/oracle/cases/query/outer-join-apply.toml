@@ -1,0 +1,92 @@
+version = 1
+feature = "joins"
+
+[[case]]
+id = "outer-join.optional-right"
+title = "Oracle (+) optional right relation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT e.empno, d.dname FROM bs_emp e, bs_dept d WHERE e.deptno = d.deptno(+) ORDER BY e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "outer-join.optional-left"
+title = "Oracle (+) optional left relation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, e.empno FROM bs_dept d, bs_emp e WHERE e.deptno(+) = d.deptno ORDER BY d.deptno, e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "outer-join.optional-filter"
+title = "Oracle (+) optional-side filter also carries marker"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT e.empno, d.dname FROM bs_emp e, bs_dept d WHERE e.deptno = d.deptno(+) AND d.active(+) = 1 ORDER BY e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "outer-join.chain"
+title = "Oracle (+) chained outer joins"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT e.empno, d.dname, l.city FROM bs_emp e, bs_dept d, bs_location l WHERE e.deptno = d.deptno(+) AND d.location_id = l.location_id(+) ORDER BY e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "apply.cross-correlated"
+title = "CROSS APPLY correlated inline view"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, x.empno FROM bs_dept d CROSS APPLY (SELECT e.empno FROM bs_emp e WHERE e.deptno = d.deptno AND e.sal >= 2000) x ORDER BY d.deptno, x.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "apply.outer-correlated"
+title = "OUTER APPLY keeps left rows without matches"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, x.empno FROM bs_dept d OUTER APPLY (SELECT e.empno FROM bs_emp e WHERE e.deptno = d.deptno AND e.sal >= 5000) x ORDER BY d.deptno, x.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

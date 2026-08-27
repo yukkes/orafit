@@ -1,0 +1,53 @@
+# Oracle 18c evidence for default BYTE length semantics after Ora2Pg migration.
+version = 1
+feature = "byte-length-semantics"
+
+[[case]]
+id = "byte-length.bounded-char-varchar-success"
+title = "One AL32UTF8 three-byte character fits CHAR(3) and VARCHAR2(3)"
+kind = "update"
+compare = "update"
+sql = """
+INSERT INTO bs_byte_length(id, variable_value, fixed_value) VALUES (1, 'あ', 'あ')
+"""
+observe_sql = """
+SELECT id FROM bs_byte_length WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "byte-length.varchar2-overflow"
+title = "Two AL32UTF8 characters exceed VARCHAR2(3 BYTE)"
+kind = "update"
+compare = "error"
+sql = """
+INSERT INTO bs_byte_length(id, variable_value, fixed_value) VALUES (2, 'ああ', 'A')
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 12899
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "byte-length.char-overflow"
+title = "Two AL32UTF8 characters exceed CHAR(3 BYTE)"
+kind = "update"
+compare = "error"
+sql = """
+INSERT INTO bs_byte_length(id, variable_value, fixed_value) VALUES (3, 'A', 'ああ')
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 12899
+
+[case.orafit]
+mode = "same"

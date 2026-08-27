@@ -1,0 +1,149 @@
+name: CI
+
+# Oracle 18c differential is the supported CI gate; workflow_dispatch is also
+# the local entry point for nektos/act.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/ci.sh'
+      - '.mvn/**'
+      - 'extension/**'
+      - 'pom.xml'
+      - 'src/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/ci.sh'
+      - '.mvn/**'
+      - 'extension/**'
+      - 'pom.xml'
+      - 'src/**'
+  workflow_dispatch:
+    inputs:
+      compatibility_status:
+        description: supported runs Oracle/PostgreSQL exact differential; unsupported records that this run makes no compatibility claim
+        required: false
+        type: choice
+        options:
+          - supported
+          - unsupported
+        default: supported
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  oracle-differential:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.compatibility_status != 'unsupported' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      ORACLE_USER: ORAFIT18
+      ORACLE_PASSWORD: OrafitOracle18
+      OJDBC_VERSION: 23.26.2.0.0
+      ORACLE_JDBC_URL: jdbc:oracle:thin:@127.0.0.1:11521/XEPDB1
+      ORACLE_CONTAINER_NAME: orafit-oracle18-${{ github.run_id }}-${{ github.run_attempt }}
+      ORACLE_IMAGE: ghcr.io/yukkes/oracle-xe:18c-busybox
+      ORACLE_IMAGE_REF: ghcr.io/yukkes/oracle-xe:18c-busybox@sha256:fea48dcda910a75589f2632f88d3d90f248b0f3eacd089b638a034e463041359
+      ORACLE_IMAGE_DIGEST: sha256:fea48dcda910a75589f2632f88d3d90f248b0f3eacd089b638a034e463041359
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Restore Oracle 18c XE image cache
+        id: oracle-image-cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: ${{ runner.temp }}/orafit-oracle-xe-18c-busybox.tar
+          key: orafit-ubuntu-24.04-oracle-xe-18c-busybox-fea48dcda910a75589f2632f88d3d90f248b0f3eacd089b638a034e463041359
+      - name: Start Oracle 18c XE and prepare OJDBC
+        run: |
+          set -Eeuo pipefail
+          image_cache="$RUNNER_TEMP/orafit-oracle-xe-18c-busybox.tar"
+          image_log="$RUNNER_TEMP/oracle-image.log"
+          maven_log="$RUNNER_TEMP/maven-prepare.log"
+
+          (
+            if [[ -f "$image_cache" ]]; then
+              docker load --input "$image_cache"
+            else
+              docker pull "$ORACLE_IMAGE_REF"
+              docker tag "$ORACLE_IMAGE_REF" "$ORACLE_IMAGE"
+              docker image inspect "$ORACLE_IMAGE" --format '{{json .RepoDigests}}' \
+                | grep -Fq "$ORACLE_IMAGE_DIGEST"
+              docker save "$ORACLE_IMAGE" --output "$image_cache"
+            fi
+          ) >"$image_log" 2>&1 &
+          image_pid=$!
+
+          (
+            ./mvnw -DskipTests test-compile
+            ./mvnw -q -Dtransitive=false dependency:get \
+              -Dartifact="com.oracle.database.jdbc:ojdbc17:${OJDBC_VERSION}"
+            echo "OJDBC_JAR=$HOME/.m2/repository/com/oracle/database/jdbc/ojdbc17/${OJDBC_VERSION}/ojdbc17-${OJDBC_VERSION}.jar" >> "$GITHUB_ENV"
+          ) >"$maven_log" 2>&1 &
+          maven_pid=$!
+
+          image_status=0
+          wait "$image_pid" || image_status=$?
+          cat "$image_log"
+          if (( image_status != 0 )); then
+            maven_status=0
+            wait "$maven_pid" || maven_status=$?
+            cat "$maven_log"
+            exit "$image_status"
+          fi
+
+          docker run --detach \
+              --name "$ORACLE_CONTAINER_NAME" \
+              --shm-size=1g \
+              --workdir /opt/oracle \
+              --tmpfs /opt/oracle/oradata:rw,exec,mode=0777 \
+              --health-cmd healthcheck.sh \
+              --health-interval 2s \
+              --health-timeout 5s \
+              --health-retries 60 \
+              --publish 11521:1521 \
+              --env ORACLE_PASSWORD="$ORACLE_PASSWORD" \
+              --env APP_USER=ORAFIT18 \
+              --env APP_USER_PASSWORD="$ORACLE_PASSWORD" \
+              "$ORACLE_IMAGE"
+
+          maven_status=0
+          wait "$maven_pid" || maven_status=$?
+          cat "$maven_log"
+          exit "$maven_status"
+      - name: Save Oracle 18c XE image cache
+        if: steps.oracle-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: ${{ runner.temp }}/orafit-oracle-xe-18c-busybox.tar
+          key: orafit-ubuntu-24.04-oracle-xe-18c-busybox-fea48dcda910a75589f2632f88d3d90f248b0f3eacd089b638a034e463041359
+
+      - name: Oracle 18c differential
+        run: ./mvnw -Dorafit.test.ojdbc="$OJDBC_JAR" -Dtest=io.github.orafit.compat.OracleDifferentialIT surefire:test
+
+      - name: Show Oracle startup failure
+        if: ${{ failure() }}
+        run: docker logs "$ORACLE_CONTAINER_NAME" || true
+
+      - name: Stop Oracle 18c XE
+        if: ${{ always() }}
+        run: docker rm --force "$ORACLE_CONTAINER_NAME" >/dev/null 2>&1 || true
+
+  unsupported-no-claim:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.compatibility_status == 'unsupported' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - run: echo 'Oracle differential was explicitly marked unsupported; this run makes no compatibility claim.'

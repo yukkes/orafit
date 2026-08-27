@@ -1,0 +1,74 @@
+version = 1
+feature = "ansi-joins"
+
+[[case]]
+id = "ansi.right-join"
+title = "ANSI RIGHT JOIN preserves unmatched right rows"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, e.empno
+FROM bs_dept d RIGHT JOIN bs_emp e ON e.deptno = d.deptno
+WHERE e.empno IN (6, 7)
+ORDER BY e.empno, d.deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "ansi.full-outer-join"
+title = "ANSI FULL OUTER JOIN preserves unmatched rows from both sides"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, e.empno
+FROM bs_dept d FULL OUTER JOIN bs_emp e ON e.deptno = d.deptno
+WHERE d.deptno = 40 OR e.empno = 7
+ORDER BY d.deptno NULLS LAST, e.empno NULLS LAST
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "ansi.cross-join"
+title = "ANSI CROSS JOIN preserves Cartesian composition"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, l.location_id
+FROM bs_dept d CROSS JOIN bs_location l
+WHERE d.deptno = 10
+ORDER BY l.location_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "ansi.self-join"
+title = "ANSI self join resolves independent aliases"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT e.empno, m.empno AS mgr_empno
+FROM bs_emp e JOIN bs_emp m ON e.mgr = m.empno
+WHERE e.empno IN (2, 4)
+ORDER BY e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

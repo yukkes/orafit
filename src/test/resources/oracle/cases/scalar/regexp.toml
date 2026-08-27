@@ -1,0 +1,182 @@
+version = 1
+feature = "regexp"
+
+[[case]]
+id = "regexp.like-basic"
+title = "REGEXP_LIKE basic"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN REGEXP_LIKE('abc123', '^[a-z]+[0-9]+$') THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.like-i"
+title = "REGEXP_LIKE case insensitive"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN REGEXP_LIKE('AbC', '^abc$', 'i') THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.like-c"
+title = "REGEXP_LIKE explicit case sensitive"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN REGEXP_LIKE('AbC', '^abc$', 'c') THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.count"
+title = "REGEXP_COUNT occurrences"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_COUNT('abc123def456', '[0-9]+') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.count-start"
+title = "REGEXP_COUNT start position"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_COUNT('abc123def456', '[0-9]+', 7) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.instr"
+title = "REGEXP_INSTR basic"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_INSTR('abc123def456', '[0-9]+') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.instr-occurrence"
+title = "REGEXP_INSTR occurrence"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_INSTR('abc123def456', '[0-9]+', 1, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.substr"
+title = "REGEXP_SUBSTR basic"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_SUBSTR('abc123def456', '[0-9]+') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.substr-occurrence"
+title = "REGEXP_SUBSTR second occurrence"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_SUBSTR('abc123def456', '[0-9]+', 1, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.replace"
+title = "REGEXP_REPLACE basic"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_REPLACE('abc123', '[0-9]+', 'X') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.replace-backref"
+title = "REGEXP_REPLACE backreference"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_REPLACE('abc123', '([a-z]+)([0-9]+)', '\\2-\\1') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regexp.null-input"
+title = "REGEXP_SUBSTR NULL input"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REGEXP_SUBSTR(NULL, '[0-9]+') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

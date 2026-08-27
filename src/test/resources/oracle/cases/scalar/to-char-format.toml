@@ -1,0 +1,54 @@
+version = 1
+feature = "datetime"
+
+[[case]]
+id = "datetime.to-char-date-format"
+title = "TO_CHAR DATE with deterministic numeric format"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(DATE '2024-02-29', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-char-timestamp-format"
+title = "TO_CHAR TIMESTAMP remains fail-closed when JDBC precision differs"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(
+  TIMESTAMP '2024-02-29 12:34:56.123456',
+  'YYYYMMDD HH24:MI:SS.FF6'
+) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "FUNCTION_TO_CHAR_TYPE"
+reason = "Oracle reports format-derived JDBC precision for TO_CHAR(TIMESTAMP, format); Orafit keeps this form fail-closed rather than adding format-specific metadata inference."
+
+[[case]]
+id = "datetime.to-char-nls-month-rejected"
+title = "TO_CHAR textual month remains outside deterministic NLS subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(DATE '2024-02-29', 'MON') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "FUNCTION_TO_CHAR_FORMAT"
+reason = "Textual month formatting depends on NLS_DATE_LANGUAGE; Orafit accepts only deterministic numeric date/time format literals."

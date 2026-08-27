@@ -1,0 +1,78 @@
+version = 1
+feature = "common-native-functions"
+
+[[case]]
+id = "native.coalesce-nullif"
+title = "Common NULL scalar functions agree for deterministic numeric inputs"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN COALESCE(NULL, 7) = 7
+          AND NULLIF(5, 5) IS NULL
+          AND NULLIF(5, 4) = 5
+         THEN 1 ELSE 0
+       END AS compatible
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "native.upper-lower-ascii"
+title = "UPPER and LOWER agree for deterministic ASCII input"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN UPPER('OraFit') = 'ORAFIT'
+          AND LOWER('OraFit') = 'orafit'
+         THEN 1 ELSE 0
+       END AS compatible
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "native.numeric-basics"
+title = "Common numeric scalar functions and ANSI numeric CAST agree"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN ABS(-7) = 7
+          AND CEIL(1.2) = 2
+          AND FLOOR(1.8) = 1
+          AND MOD(7, 3) = 1
+          AND CAST(7 AS DECIMAL(5, 0)) = 7
+         THEN 1 ELSE 0
+       END AS compatible
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "native.trim-length-ascii"
+title = "TRIM and LENGTH agree for deterministic non-empty ASCII input"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN TRIM('  Ab  ') = 'Ab'
+          AND LENGTH('abc') = 3
+         THEN 1 ELSE 0
+       END AS compatible
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"

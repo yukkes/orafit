@@ -1,0 +1,580 @@
+version = 1
+feature = "application-sql-regressions"
+
+[[case]]
+id = "regression.bind-keyword-boundary"
+title = "JDBC binds adjacent to AND and OR remain separate tokens"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ WHERE empno >= ?AND empno <= ?OR empno = ?
+ ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "1"
+
+[[case.bind]]
+index = 2
+type = "INTEGER"
+mode = "in"
+value = "2"
+
+[[case.bind]]
+index = 3
+type = "INTEGER"
+mode = "in"
+value = "14"
+
+[[case]]
+id = "regression.fixed-char-rpad-comparison"
+title = "Fixed CHAR compares with a fully padded RPAD result"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id
+  FROM bs_byte_length
+ WHERE fixed_value = RPAD(?, 3)
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "A"
+
+[[case]]
+id = "regression.fixed-char-rpad-row-value-comparison"
+title = "Fixed CHAR matches a padded RPAD value in a row-valued IN predicate"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id
+  FROM bs_byte_length
+ WHERE (fixed_value, id) IN ((RPAD(?, 3), ?))
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "A"
+
+[[case.bind]]
+index = 2
+type = "INTEGER"
+mode = "in"
+value = "9"
+
+[[case]]
+id = "regression.nvl-fixed-char-padding"
+title = "NVL preserves fixed CHAR padding and reports VARCHAR2"
+kind = "query"
+compare = "ordered"
+compare_type_name = true
+sql = """
+SELECT NVL(fixed_value, ' ') AS value
+  FROM bs_byte_length
+ WHERE id IN (9, 10)
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.negative-offset-bind"
+title = "Negative OFFSET bind is treated as zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ ORDER BY empno
+ OFFSET ? ROWS FETCH FIRST 3 ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "-1"
+
+[[case]]
+id = "regression.number-column-varchar-bind"
+title = "NUMBER column compares with a VARCHAR bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ WHERE empno = ?
+ ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "1"
+
+[[case]]
+id = "regression.varchar-bind-number-column"
+title = "VARCHAR bind compares with a NUMBER column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ WHERE ? = empno
+ ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "1"
+
+[[case]]
+id = "regression.number-column-varchar-assignment"
+title = "VARCHAR bind is assigned to a NUMBER column"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_dml
+   SET amount = ?
+ WHERE id = 1
+"""
+observe_sql = """
+SELECT id, amount FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "41.25"
+
+[[case]]
+id = "regression.nvl-varchar-number"
+title = "NVL converts a numeric fallback to the VARCHAR2 first argument"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, NVL(note, 0) AS note_value
+  FROM bs_emp
+ WHERE empno IN (1, 2)
+ ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.nvl-number-blank-empty-input"
+title = "NVL does not evaluate an invalid numeric fallback for an empty input"
+kind = "query"
+compare = "ordered"
+compare_type_name = true
+sql = """
+SELECT NVL(amount, ' ') AS amount_value
+  FROM bs_dml
+ WHERE id = -1
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.order-by-null-expression"
+title = "NULL is accepted as a constant ORDER BY expression before FOR UPDATE"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ WHERE empno = 1
+ ORDER BY NULL
+ FOR UPDATE NOWAIT
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.to-number-number-column"
+title = "TO_NUMBER accepts an already numeric column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER(amount) AS amount_value
+  FROM bs_dml
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.lpad-number-column"
+title = "LPAD implicitly converts a NUMBER input to character"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LPAD(id, 5, '0') AS padded_id
+  FROM bs_dml
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.lpad-number-fill"
+title = "LPAD implicitly converts numeric input and fill arguments"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LPAD(id, 5, 0) AS padded_id
+  FROM bs_dml
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.sum-varchar-numeric-values"
+title = "SUM implicitly converts character values to NUMBER"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SUM(value) AS total
+  FROM (
+    SELECT '1' AS value FROM dual
+    UNION ALL
+    SELECT '2' AS value FROM dual
+  )
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.add-months-date-column"
+title = "ADD_MONTHS composes inside a joined derived table in an UPDATE predicate"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_dml target
+   SET note = 'shifted'
+ WHERE EXISTS (
+   SELECT 1
+     FROM bs_emp e
+     JOIN (
+       SELECT TO_CHAR(
+                ADD_MONTHS(
+                  TO_DATE(CONCAT(year_value, month_value), 'YYYYMM'),
+                  -1
+                ),
+                'YYYYMM'
+              ) AS shifted_month
+         FROM (
+           SELECT '2024' AS year_value, '01' AS month_value
+             FROM dual
+         )
+     ) calendar
+       ON calendar.shifted_month = '202312'
+    WHERE e.empno = target.id
+ )
+"""
+observe_sql = """
+SELECT id, note FROM bs_dml ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.number-column-like"
+title = "LIKE implicitly converts a NUMBER expression to character"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id
+  FROM bs_dml
+ WHERE amount LIKE '1%'
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.union-derived-number"
+title = "UNION reconciles a derived Oracle NUMBER expression with a NUMBER column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DECODE(job, 'DEV', sal, 0) AS value FROM bs_emp
+UNION
+SELECT sal AS value FROM bs_emp
+ORDER BY value
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.character-expression-arithmetic"
+title = "Numeric arithmetic converts a typed character expression"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(id) + 1 AS next_id
+  FROM bs_dml
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.qualified-update-target"
+title = "Oracle permits a qualified target column in UPDATE SET"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_dml d
+   SET d.amount = d.amount + 1
+ WHERE d.id = 1
+"""
+observe_sql = """
+SELECT id, amount FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.spaced-greater-equal"
+title = "Oracle accepts whitespace between the greater-than and equals tokens"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id
+  FROM bs_dml
+ WHERE amount > = ?
+ ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "10"
+
+[[case]]
+id = "regression.in-single-expression"
+title = "IN accepts a single expression without parentheses"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ WHERE job IN 'DEV'
+ ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.ansi-join-legacy-marker"
+title = "Legacy outer-join markers compose with an ANSI join predicate"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, e.empno
+  FROM bs_dept d
+  LEFT OUTER JOIN bs_emp e
+    ON e.deptno(+) = d.deptno
+ ORDER BY d.deptno, e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.aggregate-order-by-source-column"
+title = "Aggregate query accepts ORDER BY on a source column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COUNT(*) AS employee_count
+  FROM bs_emp e, bs_dept d
+ WHERE d.deptno = e.deptno
+ ORDER BY d.location_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.duplicate-correlation-name"
+title = "Oracle resolves repeated correlation names for the same joined table"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COUNT(*)
+  FROM bs_emp e
+  JOIN bs_dept d ON d.deptno = e.deptno
+  JOIN bs_dept d ON d.location_id = e.deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.fullwidth-in-parenthesis"
+title = "Oracle accepts a fullwidth opening parenthesis in an IN condition"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ WHERE job IN（'DEV')
+ ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "regression.fullwidth-equals"
+title = "Oracle accepts a fullwidth equals sign in a condition"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno
+  FROM bs_emp
+ WHERE empno ＝ 1
+ ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

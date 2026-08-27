@@ -1,0 +1,96 @@
+version = 1
+feature = "connect-by"
+
+[[case]]
+id = "connect-by.order-siblings-desc"
+title = "ORDER SIBLINGS BY descending source column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, sort_key FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER SIBLINGS BY sort_key DESC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-siblings-multi"
+title = "ORDER SIBLINGS BY multiple keys with explicit NULL ordering"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, name FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER SIBLINGS BY name DESC NULLS LAST, id ASC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-siblings-upper-alias"
+title = "ORDER SIBLINGS BY UPPER SELECT alias"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, UPPER(name) AS sort_name FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER SIBLINGS BY sort_name DESC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-siblings-upper-ordinal"
+title = "ORDER SIBLINGS BY ordinal for UPPER SELECT expression"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, UPPER(name) AS sort_name FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER SIBLINGS BY 2 DESC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-siblings-lower-alias"
+title = "ORDER SIBLINGS BY LOWER SELECT alias"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, LOWER(name) AS sort_name FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER SIBLINGS BY sort_name DESC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-siblings-function-wrapped-alias"
+title = "ORDER SIBLINGS BY LOWER applied to a direct-column SELECT alias"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT name AS display_name
+FROM bs_hierarchy
+START WITH parent_id IS NULL
+CONNECT BY PRIOR id = parent_id
+ORDER SIBLINGS BY LOWER(display_name)
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

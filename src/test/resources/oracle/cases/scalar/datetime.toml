@@ -1,0 +1,412 @@
+version = 1
+feature = "datetime"
+
+[[case]]
+id = "datetime.date-literal"
+title = "DATE literal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DATE '2024-02-29' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-date-default"
+title = "TO_DATE default deterministic format"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-02-29') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-date-format"
+title = "TO_DATE explicit numeric format"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('20240229', 'YYYYMMDD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-date-bind"
+title = "TO_DATE with bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE(?, 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "2024-02-29"
+
+[[case]]
+id = "datetime.to-date-flexible-punctuation"
+title = "TO_DATE permits punctuation variation without FX"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024/02/29', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-date-format-mismatch"
+title = "TO_DATE FX format mismatch raises ORA-01861"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024/02/29', 'FXYYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1861
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-timestamp"
+title = "TO_TIMESTAMP fractional seconds"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_TIMESTAMP('2024-02-29 12:34:56.123456', 'YYYY-MM-DD HH24:MI:SS.FF6') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-timestamp-tz"
+title = "TO_TIMESTAMP_TZ preserves Oracle offset identity"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_TIMESTAMP_TZ('2024-02-29 12:34:56 +09:00', 'YYYY-MM-DD HH24:MI:SS TZH:TZM') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "TIMESTAMP_TZ_EXACT"
+reason = "PostgreSQL timestamptz normalizes instants and cannot preserve the original Oracle TIMESTAMP WITH TIME ZONE offset identity exactly."
+
+[[case]]
+id = "datetime.last-day-leap"
+title = "LAST_DAY leap February"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LAST_DAY(DATE '2024-02-10') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.add-months-end-of-month"
+title = "ADD_MONTHS end-of-month rule"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(DATE '2024-01-31', 1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.add-months-short-month"
+title = "ADD_MONTHS target month has fewer days"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(DATE '2024-01-30', 1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.add-months-backward-time"
+title = "ADD_MONTHS moves backward across month end and preserves DATE time"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(
+  TO_DATE('2024-03-31 12:34:56', 'YYYY-MM-DD HH24:MI:SS'),
+  -1
+) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.date-family-metadata"
+title = "Oracle DATE metadata for conversion and date functions"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT
+  TO_DATE('2024-02-29', 'YYYY-MM-DD') AS converted,
+  LAST_DAY(DATE '2024-02-10') AS month_end,
+  ADD_MONTHS(DATE '2024-01-31', 1) AS shifted
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.months-between-same-day"
+title = "MONTHS_BETWEEN same day component"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MONTHS_BETWEEN(DATE '2024-03-15', DATE '2024-02-15') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.months-between-last-day"
+title = "MONTHS_BETWEEN both last day"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MONTHS_BETWEEN(DATE '2024-02-29', DATE '2024-01-31') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.months-between-fractional-time"
+title = "MONTHS_BETWEEN fractional month includes time-of-day difference"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MONTHS_BETWEEN(
+  TO_DATE('2024-03-16 12:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+  TO_DATE('2024-02-15 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.trunc-day"
+title = "TRUNC date day"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(TIMESTAMP '2024-02-29 12:34:56') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.trunc-month"
+title = "TRUNC date month"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(DATE '2024-02-29', 'MM') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.trunc-year"
+title = "TRUNC date year"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(DATE '2024-08-11', 'YYYY') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.round-day"
+title = "ROUND date day"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROUND(DATE '2024-02-29' + 0.75) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.round-subday-boundaries"
+title = "ROUND date sub-day half-unit boundaries"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT
+  ROUND(TO_DATE('2024-02-29 11:59:59', 'YYYY-MM-DD HH24:MI:SS'), 'DD') AS day_before,
+  ROUND(TO_DATE('2024-02-29 12:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'DD') AS day_at,
+  ROUND(TO_DATE('2024-02-29 12:29:59', 'YYYY-MM-DD HH24:MI:SS'), 'HH24') AS hour_before,
+  ROUND(TO_DATE('2024-02-29 12:30:00', 'YYYY-MM-DD HH24:MI:SS'), 'HH24') AS hour_at,
+  ROUND(TO_DATE('2024-02-29 12:34:29', 'YYYY-MM-DD HH24:MI:SS'), 'MI') AS minute_before,
+  ROUND(TO_DATE('2024-02-29 12:34:30', 'YYYY-MM-DD HH24:MI:SS'), 'MI') AS minute_at
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.round-month"
+title = "ROUND date month"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROUND(DATE '2024-02-20', 'MM') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.round-calendar-boundaries"
+title = "ROUND date month, quarter, and year boundaries"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT
+  ROUND(DATE '2024-02-15', 'MM') AS month_before,
+  ROUND(DATE '2024-02-16', 'MM') AS month_at,
+  ROUND(DATE '2024-02-15', 'Q') AS quarter_before,
+  ROUND(DATE '2024-02-16', 'Q') AS quarter_at,
+  ROUND(DATE '2024-06-30', 'YYYY') AS year_before,
+  ROUND(DATE '2024-07-01', 'YYYY') AS year_at
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.to-char-date-default"
+title = "TO_CHAR date default under deterministic NLS"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(DATE '2024-02-29') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.timestamp-fraction"
+title = "Oracle TIMESTAMP supports fractional precision beyond PostgreSQL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TIMESTAMP '2024-02-29 12:34:56.123456789' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "TIMESTAMP_PRECISION"
+reason = "PostgreSQL timestamps have microsecond precision; Orafit rejects Oracle TIMESTAMP literals above six fractional digits instead of silently rounding."

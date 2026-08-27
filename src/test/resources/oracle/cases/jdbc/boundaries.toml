@@ -1,0 +1,77 @@
+version = 1
+feature = "jdbc-boundaries"
+
+[[case]]
+id = "routine.reject-arbitrary-block"
+title = "Arbitrary PL/SQL block is outside the bounded call envelope"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN NULL; NULL; END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "PLSQL_CALL"
+reason = "Orafit accepts only one bounded routine call in an anonymous PL/SQL envelope."
+
+[[case]]
+id = "routine.reject-ref-cursor-output"
+title = "REF CURSOR output is explicitly fail-closed"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN bs_ref_cursor(?, ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "runtime"
+code = "REF_CURSOR_OUTPUT"
+reason = "Oracle exposes SYS_REFCURSOR through CallableStatement, but Orafit 1.0 does not map REF CURSOR outputs to PostgreSQL ResultSet semantics."
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "2"
+
+[[case.bind]]
+index = 2
+type = "REF_CURSOR"
+mode = "out"
+
+[[case]]
+id = "routine.reject-ambiguous-overload"
+title = "Ambiguous PostgreSQL routine overload fails closed"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN bs_pkg.choose(?, ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "runtime"
+code = "ROUTINE_OVERLOAD_AMBIGUOUS"
+reason = "Oracle resolves the numeric overload from the JDBC bind type; Orafit rejects when PostgreSQL metadata leaves more than one matching routine signature."
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "42"
+
+[[case.bind]]
+index = 2
+type = "VARCHAR"
+mode = "out"

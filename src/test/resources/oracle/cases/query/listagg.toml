@@ -1,0 +1,139 @@
+version = 1
+feature = "listagg"
+
+[[case]]
+id = "listagg.basic"
+title = "LISTAGG basic delimiter"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(ename, ',') WITHIN GROUP (ORDER BY empno) AS names FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.null-delimiter"
+title = "LISTAGG NULL delimiter"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(ename, NULL) WITHIN GROUP (ORDER BY empno) AS names FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.null-values"
+title = "LISTAGG ignores NULL measure values"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(note, '|') WITHIN GROUP (ORDER BY empno) AS notes FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.grouped"
+title = "LISTAGG per group"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno, LISTAGG(ename, ',') WITHIN GROUP (ORDER BY empno) AS names FROM bs_emp GROUP BY deptno ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.order-desc"
+title = "LISTAGG descending order"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(ename, ',') WITHIN GROUP (ORDER BY empno DESC) AS names FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.explicit-overflow-error"
+title = "LISTAGG explicit ON OVERFLOW ERROR"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(ename, ',' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY empno) AS names FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.overflow-truncate"
+title = "LISTAGG ON OVERFLOW TRUNCATE"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(payload, ',' ON OVERFLOW TRUNCATE) WITHIN GROUP (ORDER BY id) AS value FROM bs_long_text
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.overflow-truncate-indicator"
+title = "LISTAGG TRUNCATE indicator WITHOUT COUNT"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(payload, ',' ON OVERFLOW TRUNCATE '...' WITHOUT COUNT) WITHIN GROUP (ORDER BY id) AS value FROM bs_long_text
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "listagg.analytic-over-all"
+title = "Analytic LISTAGG over the full query partition"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, LISTAGG(ename, '|') WITHIN GROUP (ORDER BY empno) OVER () AS all_names
+FROM bs_emp
+ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

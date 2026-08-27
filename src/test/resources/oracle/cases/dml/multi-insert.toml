@@ -1,0 +1,36 @@
+version = 1
+feature = "multi-insert"
+
+[[case]]
+id = "multi-insert.insert-all"
+title = "INSERT ALL is valid Oracle and must fail closed in Orafit"
+kind = "update"
+compare = "update"
+sql = """
+INSERT ALL INTO bs_dml(id, code, amount) VALUES (201, 'A', 1) INTO bs_dml(id, code, amount) VALUES (202, 'B', 2) SELECT 1 FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "UNSUPPORTED_MULTI_INSERT"
+reason = "Multi-table INSERT is outside the 1.0 subset."
+
+[[case]]
+id = "multi-insert.insert-first"
+title = "INSERT FIRST is valid Oracle and must fail closed in Orafit"
+kind = "update"
+compare = "update"
+sql = """
+INSERT FIRST WHEN x = 1 THEN INTO bs_dml(id, code, amount) VALUES (203, 'F', 3) ELSE INTO bs_dml(id, code, amount) VALUES (204, 'E', 4) SELECT 1 AS x FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "UNSUPPORTED_MULTI_INSERT"
+reason = "Conditional multi-table INSERT is outside the 1.0 subset."

@@ -1,0 +1,60 @@
+version = 1
+feature = "application-dml-scope"
+
+[[case]]
+id = "scope.insert-select"
+title = "INSERT SELECT composes query semantics into DML"
+kind = "update"
+compare = "update"
+sql = """
+INSERT INTO bs_dml (id, code, amount, note)
+SELECT 200, 'S', sal, note
+FROM bs_emp
+WHERE empno = 1
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 200 ORDER BY id
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.correlated-update"
+title = "Correlated scalar subquery composes into UPDATE"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_dml d
+SET amount = (
+  SELECT MAX(e.sal)
+  FROM bs_emp e
+  WHERE e.deptno = 10
+)
+WHERE d.id = 2
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 2 ORDER BY id
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.delete-predicate"
+title = "DELETE predicate preserves Oracle condition semantics"
+kind = "update"
+compare = "update"
+sql = """
+DELETE FROM bs_dml
+WHERE id = 3 AND amount BETWEEN 30 AND 30
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 3 ORDER BY id
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"

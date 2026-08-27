@@ -1,0 +1,22 @@
+name: Compatibility report
+description: Oracle and Orafit/PostgreSQL behave differently for a real migration shape
+title: "compat: "
+body:
+  - type: textarea
+    id: sql
+    attributes:
+      label: Minimal Oracle SQL/JDBC shape
+    validations:
+      required: true
+  - type: textarea
+    id: oracle
+    attributes:
+      label: Oracle behavior/evidence
+    validations:
+      required: true
+  - type: textarea
+    id: orafit
+    attributes:
+      label: Orafit/PostgreSQL behavior
+    validations:
+      required: true

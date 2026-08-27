@@ -1,0 +1,99 @@
+version = 1
+feature = "common-datetime"
+
+[[case]]
+id = "common.sysdate-where"
+title = "SYSDATE is valid in ordinary WHERE expressions"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp
+WHERE empno = 1 AND SYSDATE > DATE '2000-01-01'
+ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "common.sysdate-statement-stable"
+title = "SYSDATE is stable within one SQL statement"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN SYSDATE = SYSDATE THEN 1 ELSE 0 END AS same_value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "common.date-plus-bind"
+title = "Oracle DATE plus numeric bind interprets the number as days"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+  WHEN DATE '2024-02-29' + ? = TO_DATE('2024-03-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS')
+  THEN 1 ELSE 0
+END AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "1.5"
+
+[[case]]
+id = "common.date-minus-bind"
+title = "Oracle DATE minus numeric bind interprets the number as days"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+  WHEN TO_DATE('2024-03-01 12:00:00', 'YYYY-MM-DD HH24:MI:SS') - ? = DATE '2024-02-29'
+  THEN 1 ELSE 0
+END AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "1.5"
+
+[[case]]
+id = "common.sysdate-minus-days"
+title = "SYSDATE minus numeric days remains an Oracle DATE expression"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN SYSDATE - 1 < SYSDATE THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

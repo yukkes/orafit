@@ -1,0 +1,17 @@
+version = 1
+feature = "lexical"
+
+[[case]]
+id = "lexical.q-quoted-literal"
+title = "Oracle q-quoted literal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT q'[A'B]' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

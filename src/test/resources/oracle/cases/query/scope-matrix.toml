@@ -1,0 +1,293 @@
+version = 1
+feature = "application-sql-scope"
+
+[[case]]
+id = "scope.case-result-coercion"
+title = "CASE rejects incompatible NUMBER and character result datatypes"
+kind = "query"
+compare = "error"
+sql = """
+SELECT CASE WHEN 1 = 1 THEN 1 ELSE '2' END AS value
+FROM dual
+"""
+[case.oracle]
+outcome = "error"
+error_code = 932
+[case.orafit]
+mode = "same"
+code = "CASE_DATATYPE"
+
+[[case]]
+id = "scope.in-empty-subquery"
+title = "IN over an empty subquery is FALSE"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 1 IN (SELECT empno FROM bs_emp WHERE 1 = 0) THEN 1 ELSE 0 END AS truth_state
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.not-in-empty-subquery"
+title = "NOT IN over an empty subquery is TRUE"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 1 NOT IN (SELECT empno FROM bs_emp WHERE 1 = 0) THEN 1 ELSE 0 END AS truth_state
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.any-empty-subquery"
+title = "ANY over an empty subquery is FALSE"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 1 = ANY (SELECT empno FROM bs_emp WHERE 1 = 0) THEN 1 ELSE 0 END AS truth_state
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.all-empty-subquery"
+title = "ALL over an empty subquery is TRUE"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 1 = ALL (SELECT empno FROM bs_emp WHERE 1 = 0) THEN 1 ELSE 0 END AS truth_state
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.between-boundary-null"
+title = "BETWEEN is inclusive and preserves UNKNOWN on NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 2 BETWEEN 2 AND 3 THEN 1 ELSE 0 END AS low_inclusive,
+       CASE WHEN 3 BETWEEN 2 AND 3 THEN 1 ELSE 0 END AS high_inclusive,
+       CASE WHEN NULL BETWEEN 2 AND 3 THEN 1
+            WHEN NOT (NULL BETWEEN 2 AND 3) THEN 0
+            ELSE -1 END AS null_truth_state
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.like-escape-null"
+title = "LIKE ESCAPE and NULL three-valued behavior"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 'A_1' LIKE 'A!_%' ESCAPE '!' THEN 1 ELSE 0 END AS escaped_match,
+       CASE WHEN NULL LIKE '%' THEN 1
+            WHEN NOT (NULL LIKE '%') THEN 0
+            ELSE -1 END AS null_truth_state
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.condition-precedence"
+title = "AND binds more tightly than OR"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 1 = 1 OR 1 = 0 AND 1 = 0 THEN 1 ELSE 0 END AS truth_state
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.scalar-subquery-one-row"
+title = "Scalar subquery returns exactly one value"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT (SELECT dname FROM bs_dept WHERE deptno = 10) AS dname
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.distinct-null"
+title = "DISTINCT collapses duplicate NULL values"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DISTINCT note
+FROM bs_emp
+WHERE note IS NULL OR note = ''
+ORDER BY note
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.union-distinct"
+title = "UNION removes duplicates"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno FROM bs_emp WHERE empno <= 3
+UNION
+SELECT deptno FROM bs_emp WHERE empno BETWEEN 2 AND 4
+ORDER BY deptno
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.union-all"
+title = "UNION ALL preserves duplicates"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno FROM bs_emp WHERE empno <= 2
+UNION ALL
+SELECT deptno FROM bs_emp WHERE empno = 2
+ORDER BY deptno
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.intersect-distinct"
+title = "INTERSECT returns common distinct rows"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno FROM bs_emp WHERE empno <= 4
+INTERSECT
+SELECT deptno FROM bs_emp WHERE empno >= 2
+ORDER BY deptno
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.order-by-null-defaults"
+title = "Oracle default NULL ordering is LAST for ASC and FIRST for DESC"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY note ASC, empno ASC
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.analytic-default-frame"
+title = "Analytic ORDER BY default frame is RANGE through peer rows"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, SUM(sal) OVER (ORDER BY deptno) AS running_sal
+FROM bs_emp
+WHERE empno <= 3
+ORDER BY empno
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.analytic-rows-frame"
+title = "ROWS frame is row-sensitive rather than peer-sensitive"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, SUM(sal) OVER (ORDER BY deptno, empno ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_sal
+FROM bs_emp
+WHERE empno <= 3
+ORDER BY empno
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.with-dependency-chain"
+title = "Non-recursive WITH factors can depend on prior factors"
+kind = "query"
+compare = "ordered"
+sql = """
+WITH a AS (
+  SELECT empno, deptno FROM bs_emp WHERE deptno = 10
+), b AS (
+  SELECT empno FROM a WHERE empno >= 2
+)
+SELECT empno FROM b ORDER BY empno
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.ansi-left-join"
+title = "ANSI LEFT JOIN preserves unmatched left rows"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno, e.empno
+FROM bs_dept d LEFT JOIN bs_emp e ON e.deptno = d.deptno
+WHERE d.deptno IN (30, 40)
+ORDER BY d.deptno, e.empno
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.fetch-offset"
+title = "OFFSET FETCH applies after ORDER BY"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"

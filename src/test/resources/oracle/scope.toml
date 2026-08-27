@@ -1,0 +1,831 @@
+version = 1
+target = "Oracle Database 18c XE"
+product_boundary = "Java/JDBC application SQL migration to PostgreSQL"
+
+# scope: owned | outside
+# contract (owned only): same | bounded | reject
+# evidence (same only): canonical Oracle case IDs that justify the public Supported claim.
+
+[[feature]]
+id = "q-quoted-literal"
+area = "sql-core"
+scope = "owned"
+contract = "same"
+evidence = ["lexical.q-quoted-literal"]
+
+[[feature]]
+id = "lexical-other-literals"
+area = "sql-core"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "null-empty-string"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["core.empty-is-null"]
+
+[[feature]]
+id = "implicit-character-number-comparison"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["number.implicit-character-comparison", "number.implicit-character-comparison-reversed", "number.implicit-character-comparison-invalid"]
+
+[[feature]]
+id = "implicit-character-numeric-arithmetic"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["number.implicit-arithmetic", "number.implicit-arithmetic-reversed", "number.implicit-arithmetic-invalid"]
+
+[[feature]]
+id = "number-fixed-scale-value"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["scope.number-fixed-scale-value"]
+
+[[feature]]
+id = "number-conversion-other-semantics"
+area = "datatype-semantics"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "char-blank-padding-comparison"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["core.char-padding", "core.char-byte-padding"]
+
+[[feature]]
+id = "char-varchar-other-comparisons"
+area = "datatype-semantics"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "char-varchar-default-byte-length"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["byte-length.bounded-char-varchar-success", "byte-length.varchar2-overflow", "byte-length.char-overflow"]
+
+[[feature]]
+id = "date-literal"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.date-literal"]
+
+[[feature]]
+id = "date-numeric-day-arithmetic"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["common.date-plus-bind", "common.date-minus-bind"]
+
+[[feature]]
+id = "date-timestamp-basic-metadata"
+area = "datatype-semantics"
+scope = "owned"
+contract = "same"
+evidence = ["core.metadata-basic"]
+
+[[feature]]
+id = "timestamp-over-six-fractional-digits"
+area = "datatype-semantics"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "date-timestamp-other-semantics"
+area = "datatype-semantics"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "searched-case-short-circuit"
+area = "expressions"
+scope = "owned"
+contract = "same"
+evidence = ["expression.case-short-circuit"]
+
+[[feature]]
+id = "simple-case-core-forms"
+area = "expressions"
+scope = "owned"
+contract = "same"
+evidence = ["expression.simple-case-numeric", "expression.simple-case-null-no-match"]
+
+[[feature]]
+id = "case-result-datatype-enforcement"
+area = "expressions"
+scope = "owned"
+contract = "same"
+evidence = ["scope.case-result-coercion"]
+
+[[feature]]
+id = "case-expression-other-forms"
+area = "expressions"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "concatenation"
+area = "expressions"
+scope = "owned"
+contract = "same"
+evidence = ["core.concat-left-null", "core.concat-right-null", "core.concat-both-null", "core.concat-number"]
+
+[[feature]]
+id = "condition-precedence-and-or"
+area = "conditions"
+scope = "owned"
+contract = "same"
+evidence = ["scope.condition-precedence"]
+
+[[feature]]
+id = "null-comparison-three-valued-logic"
+area = "conditions"
+scope = "owned"
+contract = "same"
+evidence = ["condition.null-comparison-unknown"]
+
+[[feature]]
+id = "comparison-and-null-logic-other"
+area = "conditions"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "in-not-in"
+area = "conditions"
+scope = "owned"
+contract = "same"
+evidence = ["condition.not-in-null-unknown", "scope.in-empty-subquery", "scope.not-in-empty-subquery"]
+
+[[feature]]
+id = "any-all"
+area = "conditions"
+scope = "owned"
+contract = "same"
+evidence = ["scope.any-empty-subquery", "scope.all-empty-subquery"]
+
+[[feature]]
+id = "between"
+area = "conditions"
+scope = "owned"
+contract = "same"
+evidence = ["scope.between-boundary-null"]
+
+[[feature]]
+id = "like"
+area = "conditions"
+scope = "owned"
+contract = "same"
+evidence = ["scope.like-escape-null"]
+
+[[feature]]
+id = "exists-and-correlation"
+area = "conditions"
+scope = "owned"
+contract = "same"
+evidence = ["condition.correlated-exists"]
+
+[[feature]]
+id = "scalar-subquery"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["subquery.scalar-zero-row-null", "scope.scalar-subquery-one-row", "subquery.scalar-multiple-row-error"]
+
+[[feature]]
+id = "select-dual"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["core.dual.literal"]
+
+[[feature]]
+id = "distinct-unique"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["core.select-unique", "scope.distinct-null"]
+
+[[feature]]
+id = "ansi-joins"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["scope.ansi-left-join", "ansi.right-join", "ansi.full-outer-join", "ansi.cross-join", "ansi.self-join"]
+
+[[feature]]
+id = "legacy-outer-join-basic-forms"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["outer-join.optional-right", "outer-join.optional-left", "outer-join.optional-filter", "outer-join.chain", "outer-join.multiple-parent"]
+
+[[feature]]
+id = "legacy-outer-join-other"
+area = "query"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "cross-outer-apply-correlated-inline-view"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["apply.cross-correlated", "apply.outer-correlated"]
+
+[[feature]]
+id = "cross-outer-apply-other"
+area = "query"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "with-subquery-factoring"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["scope.with-dependency-chain"]
+
+[[feature]]
+id = "aggregate-group-having"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["aggregate.empty-input-null", "aggregate.group-by-having"]
+
+[[feature]]
+id = "set-operations"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["scope.union-distinct", "scope.union-all", "scope.intersect-distinct", "set.minus-distinct"]
+
+[[feature]]
+id = "analytic-default-range-frame"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["scope.analytic-default-frame"]
+
+[[feature]]
+id = "analytic-explicit-rows-frame"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["scope.analytic-rows-frame"]
+
+[[feature]]
+id = "analytic-row-number-partition-order"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["analytic.row-number-partition-order"]
+
+[[feature]]
+id = "analytic-window-other"
+area = "query"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "order-by-null-ordering"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["scope.order-by-null-defaults"]
+
+[[feature]]
+id = "optimizer-hint-use-hash"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["optimizer-hint.use-hash"]
+
+[[feature]]
+id = "rownum-filter-and-pagination"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["rownum.less-equal-literal", "rownum.less-literal", "rownum.equal-one", "rownum.equal-two", "rownum.bind", "rownum.multiple-upper-bounds", "rownum.ordered-inline-view", "rownum.classic-pagination", "rownum.projected-upper"]
+
+[[feature]]
+id = "rownum-same-block-order-by"
+area = "query"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "rownum-other"
+area = "query"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "offset-fetch"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["scope.fetch-offset"]
+
+[[feature]]
+id = "connect-by-single-source-forms"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["connect-by.basic", "connect-by.level", "connect-by.nocycle", "connect-by.residual-where", "connect-by.order-siblings", "connect-by.root", "connect-by.root-function", "connect-by.root-arithmetic", "connect-by.path", "connect-by.isleaf"]
+
+[[feature]]
+id = "connect-by-prior-expression-forms"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["connect-by.prior-arithmetic", "connect-by.prior-abs"]
+
+[[feature]]
+id = "connect-by-derived-source-forms"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["connect-by.source-inline", "connect-by.source-join-derived", "connect-by.source-cte", "connect-by.source-cte-column-list", "connect-by.source-distinct", "connect-by.source-nested-with", "connect-by.source-derived-wildcard"]
+
+[[feature]]
+id = "connect-by-final-output-order"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["connect-by.order-output-alias-ordinal", "connect-by.order-output-level", "connect-by.order-output-expression-alias", "connect-by.order-output-upper-alias"]
+
+[[feature]]
+id = "connect-by-order-siblings-advanced"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["connect-by.order-siblings-desc", "connect-by.order-siblings-multi", "connect-by.order-siblings-upper-alias", "connect-by.order-siblings-upper-ordinal", "connect-by.order-siblings-lower-alias", "connect-by.order-siblings-function-wrapped-alias"]
+
+[[feature]]
+id = "connect-by-physical-wildcard"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["connect-by.source-physical-wildcard", "connect-by.source-physical-qualified-wildcard"]
+
+[[feature]]
+id = "connect-by-other"
+area = "query"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "sequence-nextval-currval"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["sequence.nextval", "sequence.currval", "common.sequence-insert-nextval"]
+
+[[feature]]
+id = "common-native-scalar-functions"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["native.coalesce-nullif", "native.upper-lower-ascii", "native.numeric-basics", "native.trim-length-ascii"]
+
+[[feature]]
+id = "nvl-nvl2"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["core.nvl-null", "core.nvl-empty", "core.nvl2-null", "core.nvl2-nonnull"]
+
+[[feature]]
+id = "decode-core-forms"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["core.decode-null-equality", "core.decode-number", "core.decode-default", "core.decode-number-result", "bind.decode-source"]
+
+[[feature]]
+id = "decode-other"
+area = "functions"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "to-number-basic"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["number.to-number.integer", "number.to-number-decimal", "number.to-number-bind", "number.to-number-invalid"]
+
+[[feature]]
+id = "numeric-trunc-round"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["number.trunc-default", "number.trunc-places", "number.trunc-negative-places", "number.round-default", "number.round-places", "number.round-negative-places"]
+
+[[feature]]
+id = "greatest-numeric-first"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["number.greatest", "number.greatest-null", "number.greatest-character-coercion"]
+
+[[feature]]
+id = "least-numeric-first"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["number.least", "number.least-character-coercion"]
+
+[[feature]]
+id = "substr"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["string.substr-positive", "string.substr-zero", "string.substr-negative", "string.substr-zero-length", "string.substr-negative-length"]
+
+[[feature]]
+id = "instr"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["string.instr-basic", "string.instr-start", "string.instr-occurrence", "string.instr-negative-start", "string.instr-zero-occurrence-error"]
+
+[[feature]]
+id = "to-char-date-deterministic"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.to-char-date-default", "datetime.to-char-date-format"]
+
+[[feature]]
+id = "to-char-number-deterministic"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["string.to-char-number", "string.to-char-bind", "to-char.number-format"]
+
+[[feature]]
+id = "to-char-timestamp-format-exact-metadata"
+area = "functions"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "to-char-textual-nls-dependent-format"
+area = "functions"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "to-char-other"
+area = "functions"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "sysdate"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["core.sysdate", "common.sysdate-where", "common.sysdate-statement-stable", "common.sysdate-minus-days"]
+
+[[feature]]
+id = "to-date"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.to-date-default", "datetime.to-date-format", "datetime.to-date-bind", "datetime.to-date-flexible-punctuation", "datetime.to-date-format-mismatch"]
+
+[[feature]]
+id = "to-timestamp"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.to-timestamp"]
+
+[[feature]]
+id = "to-timestamp-tz-exact"
+area = "functions"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "last-day"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.last-day-leap", "datetime.date-family-metadata"]
+
+[[feature]]
+id = "add-months"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.add-months-end-of-month", "datetime.add-months-short-month", "datetime.add-months-backward-time", "datetime.date-family-metadata"]
+
+[[feature]]
+id = "months-between"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.months-between-same-day", "datetime.months-between-last-day", "datetime.months-between-fractional-time"]
+
+[[feature]]
+id = "date-trunc-round"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["datetime.trunc-day", "datetime.trunc-month", "datetime.trunc-year", "datetime.round-day", "datetime.round-subday-boundaries", "datetime.round-month", "datetime.round-calendar-boundaries"]
+
+[[feature]]
+id = "regexp-like-basic-flags"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["regexp.like-basic", "regexp.like-i", "regexp.like-c"]
+
+[[feature]]
+id = "regexp-count-basic-start"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["regexp.count", "regexp.count-start"]
+
+[[feature]]
+id = "regexp-instr-basic-occurrence"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["regexp.instr", "regexp.instr-occurrence"]
+
+[[feature]]
+id = "regexp-substr-basic-occurrence"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["regexp.substr", "regexp.substr-occurrence", "regexp.null-input"]
+
+[[feature]]
+id = "regexp-replace-basic-backref"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["regexp.replace", "regexp.replace-backref"]
+
+[[feature]]
+id = "listagg-18c-core-forms"
+area = "functions"
+scope = "owned"
+contract = "same"
+evidence = ["listagg.basic", "listagg.null-delimiter", "listagg.null-values", "listagg.grouped", "listagg.order-desc", "listagg.explicit-overflow-error", "listagg.overflow-truncate", "listagg.overflow-truncate-indicator"]
+
+[[feature]]
+id = "listagg-distinct-18c"
+area = "functions"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "listagg-other"
+area = "functions"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "insert"
+area = "dml"
+scope = "owned"
+contract = "same"
+evidence = ["scope.insert-select", "common.sysdate-insert", "common.sequence-insert-nextval", "common.nvl-insert-bind"]
+
+[[feature]]
+id = "update"
+area = "dml"
+scope = "owned"
+contract = "same"
+evidence = ["scope.correlated-update", "common.sysdate-update"]
+
+[[feature]]
+id = "delete"
+area = "dml"
+scope = "owned"
+contract = "same"
+evidence = ["scope.delete-predicate"]
+
+[[feature]]
+id = "merge-core-forms"
+area = "dml"
+scope = "owned"
+contract = "same"
+evidence = ["merge.matched-update", "merge.not-matched-insert", "merge.update-and-insert", "merge.update-where", "merge.insert-where", "merge.composition-on", "merge.on-column-update-error"]
+
+[[feature]]
+id = "merge-other"
+area = "dml"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "returning-into-single-row-dml"
+area = "dml"
+scope = "owned"
+contract = "same"
+evidence = ["returning.insert-one", "returning.insert-multiple-values", "returning.update-one", "returning.delete-one"]
+
+[[feature]]
+id = "returning-into-other"
+area = "dml"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "multi-table-insert"
+area = "dml"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "pivot-static-single-sum"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["pivot.basic-static-sum", "pivot.qualified-source-sum"]
+
+[[feature]]
+id = "unpivot-static-single-value"
+area = "query"
+scope = "owned"
+contract = "same"
+evidence = ["unpivot.basic-static-single-value", "unpivot.basic-include-nulls"]
+
+[[feature]]
+id = "advanced-query-constructs"
+area = "query"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "routine-call-core-forms"
+area = "plsql-boundary"
+scope = "owned"
+contract = "same"
+evidence = ["routine.function-positional", "routine.function-named", "routine.procedure-in-out-inout", "routine.procedure-named", "routine.package-function", "routine.package-procedure"]
+
+[[feature]]
+id = "anonymous-plsql-single-dml"
+area = "plsql-boundary"
+scope = "owned"
+contract = "same"
+evidence = ["plsql.single-dml"]
+
+[[feature]]
+id = "routine-arbitrary-plsql-block"
+area = "plsql-boundary"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "routine-ref-cursor-output"
+area = "plsql-boundary"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "routine-ambiguous-overload"
+area = "plsql-boundary"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "routine-invocation-other"
+area = "plsql-boundary"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "jdbc-bind-rewrite-core-forms"
+area = "jdbc"
+scope = "owned"
+contract = "same"
+evidence = ["bind.concat-function", "bind.concat-null", "bind.concat-number", "bind.decode-source", "bind.greatest-argument", "bind.substr-length", "bind.instr-position-occurrence", "bind.regexp-input", "bind.listagg-delimiter"]
+
+[[feature]]
+id = "jdbc-bind-lineage-other"
+area = "jdbc"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "jdbc-result-metadata-core"
+area = "jdbc"
+scope = "owned"
+contract = "same"
+evidence = ["core.metadata-basic", "datetime.date-family-metadata", "scope.number-fixed-scale-value"]
+
+[[feature]]
+id = "jdbc-result-metadata-other"
+area = "jdbc"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "jdbc-vendor-error-core"
+area = "jdbc"
+scope = "owned"
+contract = "same"
+evidence = ["number.to-number-invalid", "datetime.to-date-format-mismatch", "subquery.scalar-multiple-row-error", "scope.case-result-coercion", "merge.on-column-update-error"]
+
+[[feature]]
+id = "jdbc-vendor-errors-other"
+area = "jdbc"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "jdbc-prepared-parameter-metadata"
+area = "jdbc"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "jdbc-callable-parameter-metadata"
+area = "jdbc"
+scope = "owned"
+contract = "reject"
+
+[[feature]]
+id = "jdbc-prepared-statement-reuse-batching"
+area = "jdbc"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "jdbc-callable-statement-reuse"
+area = "jdbc"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "jdbc-transactions-savepoints"
+area = "jdbc"
+scope = "owned"
+contract = "bounded"
+
+[[feature]]
+id = "schema-and-administration-ddl"
+area = "outside"
+scope = "outside"
+reason = "schema migration and database administration are outside runtime JDBC compatibility"
+
+[[feature]]
+id = "users-roles-privileges-tablespaces"
+area = "outside"
+scope = "outside"
+reason = "database administration"
+
+[[feature]]
+id = "plsql-language-and-program-unit-definition"
+area = "outside"
+scope = "outside"
+reason = "bounded routine call compatibility is supported, not PL/SQL language emulation"
+
+[[feature]]
+id = "object-collection-lob-special-types"
+area = "outside"
+scope = "outside"
+reason = "outside the application SQL core"
+
+[[feature]]
+id = "xml-json-spatial-text-mining-olap"
+area = "outside"
+scope = "outside"
+reason = "specialized Oracle feature families"
+
+[[feature]]
+id = "nls-collation-region-timezone-dependent-semantics"
+area = "outside"
+scope = "outside"
+reason = "environment-dependent behavior is not guessed"
+
+[[feature]]
+id = "distributed-db-links-flashback"
+area = "outside"
+scope = "outside"
+reason = "server and distributed execution features"
+
+[[feature]]
+id = "oracle-proprietary-jdbc-types-and-apis"
+area = "outside"
+scope = "outside"
+reason = "standard JDBC-facing migration behavior is owned, not the full proprietary API"

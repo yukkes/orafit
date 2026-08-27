@@ -1,0 +1,198 @@
+version = 1
+feature = "binds"
+
+[[case]]
+id = "bind.concat-function"
+title = "VARCHAR bind in Oracle CONCAT function"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CONCAT(?, '%') AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "abc"
+
+[[case]]
+id = "bind.concat-null"
+title = "NULL VARCHAR bind in concatenation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ? || 'X' AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+null = true
+
+[[case]]
+id = "bind.concat-number"
+title = "NUMBER bind in concatenation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ? || 'X' AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "12.5"
+
+[[case]]
+id = "bind.decode-source"
+title = "Bind used as DECODE source"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DECODE(?, 1, 'one', 2, 'two', 'other') AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "2"
+
+[[case]]
+id = "bind.greatest-argument"
+title = "Bind inside GREATEST numeric subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT GREATEST(1, ?) AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "2.5"
+
+[[case]]
+id = "bind.substr-length"
+title = "Bind as SUBSTR length"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SUBSTR('abcdef', 2, ?) AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "3"
+
+[[case]]
+id = "bind.instr-position-occurrence"
+title = "Binds as INSTR start and occurrence"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT INSTR('bananas', 'na', ?, ?) AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "1"
+[[case.bind]]
+index = 2
+type = "INTEGER"
+mode = "in"
+value = "2"
+
+[[case]]
+id = "bind.regexp-input"
+title = "Bind as REGEXP input value"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN REGEXP_LIKE(?, '^[a-z]+$') THEN 1 ELSE 0 END AS value FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "abc"
+
+[[case]]
+id = "bind.listagg-delimiter"
+title = "Bind as LISTAGG delimiter"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(ename, ?) WITHIN GROUP (ORDER BY empno) AS names FROM bs_emp
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "|"
+
+[[case]]
+id = "bind.order-by-constant"
+title = "ORDER BY bind is a constant expression and does not select a sort column"
+kind = "query"
+compare = "ordered"
+# A bind in ORDER BY is a value expression, not an identifier or a select-list ordinal.
+# Every row receives the same bound value, so Oracle executes successfully without reordering.
+sql = """
+SELECT CAST(sort_value AS VARCHAR(40)) AS sort_value
+FROM (
+  SELECT 30 AS sort_value, 1 AS source_order FROM dual
+  UNION ALL
+  SELECT 10 AS sort_value, 2 AS source_order FROM dual
+  UNION ALL
+  SELECT 20 AS sort_value, 3 AS source_order FROM dual
+  ORDER BY source_order
+) ordered_values
+ORDER BY ?
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "SORT_VALUE"

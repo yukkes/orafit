@@ -1,0 +1,326 @@
+version = 1
+feature = "number"
+
+[[case]]
+id = "number.to-number.integer"
+title = "TO_NUMBER integer"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER('123') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-decimal"
+title = "TO_NUMBER decimal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER('123.45') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-bind"
+title = "TO_NUMBER JDBC bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER(?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "123.45"
+
+[[case]]
+id = "number.to-number-invalid"
+title = "Invalid number raises an error"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('not-a-number') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.implicit-character-comparison"
+title = "Character compared with NUMBER"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN '10' = 10 THEN 1 ELSE 0 END AS equal_value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.implicit-character-comparison-reversed"
+title = "NUMBER compared with character literal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 10 = '10' THEN 1 ELSE 0 END AS equal_value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.implicit-character-comparison-invalid"
+title = "Invalid character-to-NUMBER comparison raises ORA-01722"
+kind = "query"
+compare = "error"
+sql = """
+SELECT CASE WHEN 'not-a-number' = 10 THEN 1 ELSE 0 END AS equal_value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.implicit-arithmetic"
+title = "Character participates in numeric arithmetic"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT '2' + 3 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.implicit-arithmetic-reversed"
+title = "Numeric arithmetic converts a character right operand"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 3 + '2' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.implicit-arithmetic-invalid"
+title = "Invalid character-to-NUMBER arithmetic raises ORA-01722"
+kind = "query"
+compare = "error"
+sql = """
+SELECT 'not-a-number' + 1 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.trunc-default"
+title = "TRUNC numeric default places"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(12.987) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.trunc-places"
+title = "TRUNC numeric places"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(12.987, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.trunc-negative-places"
+title = "TRUNC numeric negative places"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(1234.5, -2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.round-default"
+title = "ROUND numeric default places"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROUND(12.567) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.round-places"
+title = "ROUND numeric places"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROUND(12.567, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.round-negative-places"
+title = "ROUND numeric negative places"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROUND(1250, -2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.greatest"
+title = "GREATEST numeric"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT GREATEST(1, 5, 3) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.greatest-null"
+title = "GREATEST propagates NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT GREATEST(1, NULL, 3) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.greatest-character-coercion"
+title = "GREATEST numeric first argument controls conversion"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT GREATEST(1, '2', 3) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.least"
+title = "LEAST numeric"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LEAST(1, 5, 3) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.least-character-coercion"
+title = "LEAST numeric first argument controls conversion"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LEAST(10, '2', 30) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

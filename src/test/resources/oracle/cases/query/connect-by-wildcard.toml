@@ -1,0 +1,49 @@
+version = 1
+feature = "connect-by"
+
+[[case]]
+id = "connect-by.source-derived-wildcard"
+title = "Hierarchy projection expands explicit derived source wildcard"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT x.* FROM (SELECT id, parent_id, name FROM bs_hierarchy) x START WITH x.parent_id IS NULL CONNECT BY NOCYCLE PRIOR x.id = x.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+# The physical path re-joins the original table by hierarchy row identity so pgJDBC
+# observes the real table columns instead of metadata-poor composite expansion.
+[[case]]
+id = "connect-by.source-physical-wildcard"
+title = "Hierarchy projection preserves physical table wildcard shape and metadata"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT * FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY NOCYCLE PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.source-physical-qualified-wildcard"
+title = "Hierarchy projection preserves qualified physical table wildcard metadata"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT h.* FROM bs_hierarchy h START WITH h.parent_id IS NULL CONNECT BY NOCYCLE PRIOR h.id = h.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

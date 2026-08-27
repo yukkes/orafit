@@ -1,0 +1,35 @@
+version = 1
+feature = "number-value-scale"
+
+[[case]]
+id = "scope.number-fixed-scale-value"
+title = "NUMBER(p,s) value representation follows Oracle JDBC"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(1 AS NUMBER(10,2)) AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "scope.number-fixed-scale-to-char"
+title = "TO_CHAR NUMBER omits insignificant declared scale"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(CAST(10 AS NUMBER(6,3))) AS whole_value,
+       TO_CHAR(CAST(10.010 AS NUMBER(6,3))) AS fractional_value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

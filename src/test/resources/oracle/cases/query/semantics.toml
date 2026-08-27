@@ -1,0 +1,243 @@
+version = 1
+feature = "sql-semantics"
+
+[[case]]
+id = "expression.case-short-circuit"
+title = "Searched CASE does not evaluate a later condition after a match"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN 1 = 1 THEN 42
+         WHEN TO_NUMBER('not-a-number') = 0 THEN 0
+         ELSE -1
+       END AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "expression.simple-case-numeric"
+title = "Simple CASE selects the matching numeric branch"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE 2
+         WHEN 1 THEN 10
+         WHEN 2 THEN 20
+         ELSE 30
+       END AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "expression.simple-case-null-no-match"
+title = "Simple CASE does not treat NULL switch and NULL comparison as equal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE NULL
+         WHEN NULL THEN 1
+         ELSE 0
+       END AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "condition.null-comparison-unknown"
+title = "NULL equality remains UNKNOWN"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN NULL = NULL THEN 1
+         WHEN NOT (NULL = NULL) THEN 0
+         ELSE -1
+       END AS truth_state
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "condition.not-in-null-unknown"
+title = "NOT IN with NULL evaluates to UNKNOWN rather than TRUE or FALSE"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN 2 NOT IN (1, NULL) THEN 1
+         WHEN NOT (2 NOT IN (1, NULL)) THEN 0
+         ELSE -1
+       END AS truth_state
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "subquery.scalar-zero-row-null"
+title = "Scalar subquery with zero rows evaluates to NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN (SELECT empno FROM bs_emp WHERE empno = -1) IS NULL THEN 1
+         ELSE 0
+       END AS is_null
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "subquery.scalar-multiple-row-error"
+title = "Scalar subquery with multiple rows raises ORA-01427"
+kind = "query"
+compare = "error"
+sql = """
+SELECT (SELECT deptno FROM bs_emp WHERE deptno = 10) AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1427
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "condition.correlated-exists"
+title = "Correlated EXISTS is evaluated for each parent row"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT d.deptno
+FROM bs_dept d
+WHERE EXISTS (
+  SELECT 1
+  FROM bs_emp e
+  WHERE e.deptno = d.deptno
+    AND e.sal > 4000
+)
+ORDER BY d.deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "aggregate.empty-input-null"
+title = "COUNT returns zero while SUM returns NULL for an empty input"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 AS verified
+FROM dual
+WHERE (SELECT COUNT(*) FROM bs_emp WHERE empno < 0) = 0
+  AND (SELECT COUNT(note) FROM bs_emp WHERE empno < 0) = 0
+  AND (SELECT SUM(sal) FROM bs_emp WHERE empno < 0) IS NULL
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "aggregate.group-by-having"
+title = "HAVING filters after GROUP BY aggregation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno
+FROM bs_emp
+GROUP BY deptno
+HAVING COUNT(*) > 1
+ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "set.minus-distinct"
+title = "MINUS performs Oracle set difference with duplicate elimination"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno FROM bs_emp
+MINUS
+SELECT deptno FROM bs_dept
+ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "analytic.row-number-partition-order"
+title = "ROW_NUMBER resets by partition and follows a deterministic total order"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno, empno
+FROM (
+  SELECT deptno,
+         empno,
+         ROW_NUMBER() OVER (
+           PARTITION BY deptno
+           ORDER BY sal DESC, empno ASC
+         ) AS rn
+  FROM bs_emp
+  WHERE deptno IN (10, 20)
+) ranked
+WHERE rn = 1
+ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

@@ -1,0 +1,32 @@
+version = 1
+feature = "sequence"
+
+[[case]]
+id = "sequence.nextval"
+title = "Sequence NEXTVAL"
+kind = "query"
+compare = "shape"
+sql = """
+SELECT bs_seq.NEXTVAL AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "sequence.currval"
+title = "Sequence NEXTVAL and CURRVAL in one query"
+kind = "query"
+compare = "shape"
+sql = """
+SELECT bs_seq.NEXTVAL AS next_value, bs_seq.CURRVAL AS current_value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

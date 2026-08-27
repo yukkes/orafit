@@ -1,0 +1,35 @@
+version = 1
+feature = "anonymous-dml-block"
+
+[[case]]
+id = "anonymous-dml-block.multiple-statements-with-binds"
+title = "Anonymous DML block executes each statement with ordered JDBC binds"
+kind = "update"
+compare = "update"
+sql = """
+BEGIN
+  INSERT INTO bs_dml(id, code, amount, note) VALUES (401, ?, 1, 'before');
+  UPDATE bs_dml SET note = ? WHERE id = 401;
+END;
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 401 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "BLOCK"
+
+[[case.bind]]
+index = 2
+type = "VARCHAR"
+mode = "in"
+value = "after"

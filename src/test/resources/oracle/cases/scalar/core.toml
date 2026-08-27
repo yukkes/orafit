@@ -1,0 +1,292 @@
+version = 1
+feature = "core"
+
+[[case]]
+id = "core.dual.literal"
+title = "DUAL returns one row"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.select-unique"
+title = "SELECT UNIQUE is DISTINCT"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT UNIQUE deptno FROM bs_emp ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.empty-is-null"
+title = "Empty string is NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN '' IS NULL THEN 1 ELSE 0 END AS is_null FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.concat-left-null"
+title = "NULL on left of concatenation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NULL || 'A' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.concat-right-null"
+title = "NULL on right of concatenation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 'A' || NULL AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.concat-both-null"
+title = "Both concatenation operands NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NULL || NULL AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.concat-number"
+title = "Numeric concatenation uses character conversion"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 12 || 34 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.nvl-null"
+title = "NVL with NULL"
+kind = "query"
+compare = "ordered"
+compare_type_name = true
+sql = """
+SELECT NVL(NULL, 'fallback') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.nvl-empty"
+title = "NVL sees empty string as NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NVL('', 'fallback') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.nvl2-null"
+title = "NVL2 NULL branch"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NVL2(NULL, 'nonnull', 'null') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.nvl2-nonnull"
+title = "NVL2 non-NULL branch"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NVL2('x', 'nonnull', 'null') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.decode-null-equality"
+title = "DECODE treats NULL as equal to NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DECODE(NULL, NULL, 'match', 'miss') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.decode-number"
+title = "DECODE numeric search"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DECODE(2, 1, 'one', 2, 'two', 'other') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.decode-default"
+title = "DECODE default branch"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DECODE(3, 1, 'one', 2, 'two', 'other') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.decode-number-result"
+title = "DECODE numeric result keeps Oracle NUMBER metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DECODE(2, 1, 10, 2, 20, 30) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.char-padding"
+title = "CHAR comparison uses blank padding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN CAST('A' AS CHAR(3)) = 'A' THEN 1 ELSE 0 END AS equal_value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.char-byte-padding"
+title = "Default CHAR length uses Oracle byte semantics for multibyte values"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('A' AS CHAR(15)) AS ascii_value,
+       CAST('３' AS CHAR(15)) AS full_width_value,
+       CAST('テキスト１' AS CHAR(15)) AS exact_byte_value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.metadata-basic"
+title = "Capture NUMBER/DATE/TIMESTAMP metadata"
+kind = "query"
+compare = "ordered"
+compare_type_name = true
+sql = """
+SELECT CAST(12.34 AS NUMBER(10,2)) AS n, DATE '2024-02-29' AS d, TIMESTAMP '2024-02-29 12:34:56.123456' AS ts FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.sysdate"
+title = "SYSDATE shape and JDBC type"
+kind = "query"
+compare = "shape"
+sql = """
+SELECT SYSDATE AS now_value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

@@ -1,0 +1,215 @@
+version = 1
+feature = "rownum"
+
+[[case]]
+id = "rownum.less-equal-literal"
+title = "ROWNUM <= literal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM <= 3
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.less-literal"
+title = "ROWNUM < literal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM < 3
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.equal-one"
+title = "ROWNUM = 1"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM = 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.equal-two"
+title = "ROWNUM = 2 is never reached"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM = 2
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.bind"
+title = "ROWNUM bind upper bound"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM <= ?
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "3"
+
+[[case]]
+id = "rownum.multiple-upper-bounds"
+title = "Multiple ROWNUM upper bounds"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM <= 5 AND ROWNUM < 3
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.same-block-order"
+title = "ROWNUM with same-block ORDER BY is execution-plan-sensitive"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM <= 3 ORDER BY empno DESC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "ROWNUM_ORDER_BY"
+reason = "Oracle can choose rows differently depending on access path before ORDER BY; Orafit rejects rather than impose PostgreSQL top-N semantics."
+
+[[case]]
+id = "rownum.ordered-inline-view"
+title = "ROWNUM outside ordered inline view"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM (SELECT empno FROM bs_emp ORDER BY empno DESC) WHERE ROWNUM <= 3
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "rownum.classic-pagination"
+title = "Classic two-level ROWNUM pagination"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, rn
+FROM (
+    SELECT q.empno, ROWNUM AS rn
+    FROM (SELECT empno FROM bs_emp ORDER BY empno) q
+    WHERE ROWNUM <= ?
+)
+WHERE rn > ?
+ORDER BY rn
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "6"
+
+[[case.bind]]
+index = 2
+type = "INTEGER"
+mode = "in"
+value = "2"
+
+[[case]]
+id = "rownum.reject-projection"
+title = "Direct ROWNUM projection is outside verified subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ROWNUM AS rn, empno FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "ROWNUM_NESTED_UPPER"
+reason = "Direct ROWNUM projection is not yet lowered safely."
+
+[[case]]
+id = "rownum.reject-greater-than"
+title = "ROWNUM > predicate is intentionally rejected"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ROWNUM > 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "ROWNUM_DIRECTION"
+reason = "Oracle incremental ROWNUM semantics are not represented by a PostgreSQL offset."
+
+[[case]]
+id = "rownum.reject-aggregate"
+title = "ROWNUM with cardinality-changing aggregate is rejected"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COUNT(*) AS cnt FROM bs_emp WHERE ROWNUM <= 3
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "ROWNUM_CARDINALITY"
+reason = "Aggregate evaluation order requires a separately verified plan."

@@ -1,0 +1,70 @@
+version = 1
+feature = "unsupported-boundaries"
+
+[[case]]
+id = "boundary.pivot"
+title = "Direct-table Oracle PIVOT remains outside the basic subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT * FROM bs_sales PIVOT (SUM(sal) FOR job IN ('DEV' AS dev, 'OPS' AS ops)) ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "UNSUPPORTED_PIVOT"
+reason = "The basic subset requires an explicit derived-query source shape."
+
+[[case]]
+id = "boundary.unpivot"
+title = "Oracle UNPIVOT is explicitly outside Orafit 1.0 subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno, job, sal FROM bs_wide UNPIVOT (sal FOR job IN (dev_sal AS 'DEV', ops_sal AS 'OPS')) ORDER BY deptno, job
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "UNSUPPORTED_UNPIVOT"
+reason = "UNPIVOT is not a 1.0 requirement."
+
+[[case]]
+id = "boundary.model"
+title = "Oracle MODEL clause must fail closed"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT product, year, sales FROM bs_model MODEL DIMENSION BY (product, year) MEASURES (sales) RULES (sales['A', 2025] = sales['A', 2024] * 1.1) ORDER BY product, year
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "UNSUPPORTED_ORACLE"
+reason = "MODEL is intentionally outside the bounded contract."
+
+[[case]]
+id = "boundary.match-recognize"
+title = "MATCH_RECOGNIZE must fail closed"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT * FROM bs_events MATCH_RECOGNIZE (ORDER BY event_time MEASURES MATCH_NUMBER() AS match_no ALL ROWS PER MATCH PATTERN (UP+) DEFINE UP AS UP.value > PREV(UP.value))
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "UNSUPPORTED_ORACLE"
+reason = "MATCH_RECOGNIZE is intentionally outside the bounded contract."

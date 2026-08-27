@@ -1,0 +1,80 @@
+version = 1
+feature = "pivot-unpivot-basic"
+
+[[case]]
+id = "pivot.basic-static-sum"
+title = "Static single-column PIVOT with one SUM preserves grouped values"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno, dev, ops
+FROM (SELECT deptno, job, sal FROM bs_sales)
+PIVOT (SUM(sal) FOR job IN ('DEV' AS dev, 'OPS' AS ops))
+ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "pivot.qualified-source-sum"
+title = "Static PIVOT accepts the explicit derived-source qualifier"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno, dev
+FROM (SELECT deptno, job, sal FROM bs_sales) s
+PIVOT (SUM(s.sal) FOR job IN ('DEV' AS dev))
+ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "unpivot.basic-static-single-value"
+title = "Static single-value UNPIVOT preserves labels and default NULL exclusion"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COUNT(*) AS mgr_rows, SUM(amount) AS mgr_total
+FROM (
+  SELECT empno, attr, amount
+  FROM (SELECT empno, mgr, deptno FROM bs_emp WHERE empno IN (1, 2))
+  UNPIVOT (amount FOR attr IN (mgr AS 'MGR', deptno AS 'DEPT'))
+)
+WHERE attr = 'MGR'
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "unpivot.basic-include-nulls"
+title = "Static single-value UNPIVOT INCLUDE NULLS preserves null measures"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COUNT(*) AS mgr_rows, COUNT(amount) AS nonnull_mgr_rows
+FROM (
+  SELECT empno, attr, amount
+  FROM (SELECT empno, mgr, deptno FROM bs_emp WHERE empno IN (1, 2))
+  UNPIVOT INCLUDE NULLS (amount FOR attr IN (mgr AS 'MGR', deptno AS 'DEPT'))
+)
+WHERE attr = 'MGR'
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

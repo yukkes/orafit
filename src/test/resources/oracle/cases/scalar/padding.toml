@@ -1,0 +1,96 @@
+version = 1
+feature = "padding"
+
+[[case]]
+id = "string.lpad-column-mixed-types"
+title = "LPAD normalizes text, numeric length, and fill arguments"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LPAD(ename, 8, '0') AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.rpad-column-mixed-types"
+title = "RPAD shares the Oracle padding coercion contract"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT RPAD(ename, 8, '0') AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.lpad-numeric-source"
+title = "LPAD converts a numeric source using Oracle character semantics"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LPAD(123, 6, '0') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.rpad-bind-arguments"
+title = "RPAD normalizes JDBC bind argument types"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT RPAD(?, ?, ?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "A"
+
+[[case.bind]]
+index = 2
+type = "INTEGER"
+mode = "in"
+value = "5"
+
+[[case.bind]]
+index = 3
+type = "VARCHAR"
+mode = "in"
+value = "0"
+
+[[case]]
+id = "string.lpad-invalid-character-length"
+title = "LPAD preserves Oracle invalid-number conversion errors"
+kind = "query"
+compare = "error"
+sql = """
+SELECT LPAD('A', 'x', '0') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"

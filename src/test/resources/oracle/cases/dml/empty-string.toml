@@ -1,0 +1,86 @@
+version = 1
+feature = "empty-string-dml"
+
+[[case]]
+id = "empty-string.insert-literal"
+title = "INSERT empty VARCHAR2 literal stores NULL"
+kind = "update"
+compare = "update"
+sql = """
+INSERT INTO bs_dml(id, code, amount, note) VALUES (301, '', 1, 'literal')
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 301 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "empty-string.insert-bind"
+title = "INSERT empty VARCHAR bind stores NULL"
+kind = "update"
+compare = "update"
+sql = """
+INSERT INTO bs_dml(id, code, amount, note) VALUES (302, ?, 2, 'bind')
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 302 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = ""
+
+[[case]]
+id = "empty-string.update-literal"
+title = "UPDATE empty VARCHAR2 literal stores NULL"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_dml SET note = '' WHERE id = 1
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "empty-string.update-bind"
+title = "UPDATE empty VARCHAR bind stores NULL"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_dml SET note = ? WHERE id = 1
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = ""

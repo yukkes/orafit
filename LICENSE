@@ -1,0 +1,53 @@
+Orafit License
+
+Copyright (c) 2026 yukkes
+All rights reserved.
+
+1. Free Use
+
+You may use, copy, modify, and evaluate Orafit free of charge for development,
+testing, evaluation, and proof-of-concept purposes.
+
+2. Hitachi Group
+
+"Hitachi Group" means Hitachi, Ltd. and any entity directly or indirectly
+controlled by Hitachi, Ltd.
+
+The Hitachi Group may also use, copy, modify, and deploy Orafit free of charge
+for internal production systems and for customer evaluation, migration
+assessment, proof-of-concept, testing, and other non-production work.
+
+Contractors acting on behalf of the Hitachi Group may exercise these rights
+only as necessary for such work and under the Hitachi Group's direction and
+control.
+
+3. Commercial Production Use
+
+Production use outside the free-use scope above requires a separate commercial
+license from the copyright holder. This includes customer production
+deployment, OEM use, resale, sublicensing, and offering Orafit as a managed or
+standalone service.
+
+4. Forks and Modified Versions
+
+Forks and modified versions remain subject to this License. Modification,
+renaming, or redistribution does not change the applicable free-use or
+commercial-use conditions.
+
+Copyright and license notices must be retained in copies and modified versions.
+
+5. Support
+
+Free use does not include support, maintenance, updates, warranty, or any
+compatibility guarantee.
+
+6. Third-Party Software
+
+Third-party components remain subject to their respective licenses. See
+THIRD_PARTY_NOTICES.md.
+
+7. Disclaimer
+
+Orafit is provided "AS IS", without warranty of any kind. To the maximum
+extent permitted by law, the copyright holder is not liable for damages
+arising from its use.

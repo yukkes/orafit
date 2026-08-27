@@ -1,0 +1,144 @@
+version = 1
+feature = "merge"
+
+[[case]]
+id = "merge.matched-update"
+title = "MERGE matched UPDATE"
+kind = "update"
+compare = "update"
+sql = """
+MERGE INTO bs_dml t USING (SELECT 1 id, 99 amount FROM dual) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.amount = s.amount
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "merge.not-matched-insert"
+title = "MERGE not matched INSERT"
+kind = "update"
+compare = "update"
+sql = """
+MERGE INTO bs_dml t USING (SELECT 99 id, 77 amount FROM dual) s ON (t.id = s.id) WHEN NOT MATCHED THEN INSERT (id, code, amount) VALUES (s.id, 'N', s.amount)
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 99 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "merge.update-and-insert"
+title = "MERGE with both actions"
+kind = "update"
+compare = "update"
+sql = """
+MERGE INTO bs_dml t USING bs_merge_src s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.amount = s.amount, t.note = s.note WHEN NOT MATCHED THEN INSERT (id, code, amount, note) VALUES (s.id, 'M', s.amount, s.note)
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id IN (1, 4, 5) ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "merge.update-where"
+title = "MERGE UPDATE WHERE"
+kind = "update"
+compare = "update"
+sql = """
+MERGE INTO bs_dml t USING bs_merge_src s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.amount = s.amount WHERE s.amount >= 20
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "merge.insert-where"
+title = "MERGE INSERT WHERE"
+kind = "update"
+compare = "update"
+sql = """
+MERGE INTO bs_dml t USING bs_merge_src s ON (t.id = s.id) WHEN NOT MATCHED THEN INSERT (id, code, amount) VALUES (s.id, 'W', s.amount) WHERE s.amount >= 20
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id IN (4, 5) ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "merge.composition-on"
+title = "Oracle concatenation semantics survive MERGE ON"
+kind = "update"
+compare = "update"
+sql = """
+MERGE INTO bs_dml t USING (SELECT 'A' code, 99 amount FROM dual) s ON (t.code || NULL = s.code) WHEN MATCHED THEN UPDATE SET t.amount = s.amount
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 1 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "merge.on-column-update-error"
+title = "MERGE cannot update a target column referenced by ON"
+kind = "update"
+compare = "error"
+sql = """
+MERGE INTO bs_dml t USING (SELECT 1 id FROM dual) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.id = t.id + 10
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 38104
+
+[case.orafit]
+mode = "same"
+code = "MERGE_ON_COLUMN_UPDATE"
+
+[[case]]
+id = "merge.reject-delete-where"
+title = "MERGE DELETE WHERE is valid Oracle but intentionally rejected"
+kind = "update"
+compare = "update"
+sql = """
+MERGE INTO bs_dml t USING bs_merge_src s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.amount = s.amount DELETE WHERE s.amount = 0
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "MERGE_DELETE_WHERE"
+reason = "Oracle DELETE WHERE has post-update semantics not yet reproduced safely."

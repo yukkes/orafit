@@ -1,0 +1,434 @@
+version = 1
+feature = "connect-by"
+
+[[case]]
+id = "connect-by.basic"
+title = "Basic START WITH / CONNECT BY"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, parent_id, name FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.prior-arithmetic"
+title = "PRIOR arithmetic source expression"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, LEVEL AS depth FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR (id + 1) = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.prior-abs"
+title = "PRIOR ABS source expression"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, LEVEL AS depth FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR ABS(id) = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.level"
+title = "LEVEL projection"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, LEVEL AS depth FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.nocycle"
+title = "NOCYCLE on acyclic tree"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, LEVEL AS depth FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY NOCYCLE PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.residual-where"
+title = "Residual WHERE filters output after hierarchy expansion"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, parent_id FROM bs_hierarchy WHERE name <> 'child-a' START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-siblings"
+title = "ORDER SIBLINGS BY ascending source column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, parent_id, sort_key FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER SIBLINGS BY sort_key
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-output-alias-ordinal"
+title = "Final hierarchy ORDER BY alias and ordinal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, name AS sort_name, LEVEL AS level_no FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER BY sort_name DESC NULLS LAST, 1 ASC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-output-level"
+title = "Final hierarchy ORDER BY LEVEL and source column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER BY LEVEL DESC, name
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-output-expression-alias"
+title = "Final hierarchy ORDER BY computed SELECT alias"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, LOWER(name) AS sort_name, LEVEL AS level_no FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER BY sort_name DESC NULLS LAST, id ASC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.order-output-upper-alias"
+title = "Final hierarchy ORDER BY UPPER SELECT alias"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, UPPER(name) AS sort_name, LEVEL AS level_no FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER BY sort_name DESC NULLS LAST, id ASC
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.root"
+title = "CONNECT_BY_ROOT direct column"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, CONNECT_BY_ROOT id AS root_id FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.root-function"
+title = "CONNECT_BY_ROOT source function expression"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, CONNECT_BY_ROOT UPPER(name) AS root_name FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.root-arithmetic"
+title = "CONNECT_BY_ROOT source arithmetic expression"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, CONNECT_BY_ROOT (id + 1) AS root_id FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.path"
+title = "SYS_CONNECT_BY_PATH direct projection"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, SYS_CONNECT_BY_PATH(name, '/') AS path_value FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.isleaf"
+title = "CONNECT_BY_ISLEAF direct projection"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT id, CONNECT_BY_ISLEAF AS is_leaf FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.source-inline"
+title = "Hierarchy over explicit inline-view source"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT x.id, x.name, LEVEL AS depth FROM (SELECT id, parent_id, name FROM bs_hierarchy) x START WITH x.parent_id IS NULL CONNECT BY NOCYCLE PRIOR x.id = x.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.source-join-derived"
+title = "Hierarchy over join-derived source"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT x.id, x.dname, LEVEL AS depth FROM (SELECT h.id, h.parent_id, d.dname FROM bs_hierarchy h LEFT JOIN bs_dept d ON d.deptno = h.deptno) x START WITH x.parent_id IS NULL CONNECT BY NOCYCLE PRIOR x.id = x.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.source-cte"
+title = "Hierarchy over CTE source"
+kind = "query"
+compare = "unordered"
+sql = """
+WITH src AS (SELECT id, parent_id, name FROM bs_hierarchy) SELECT s.id, s.name, LEVEL AS depth FROM src s START WITH s.parent_id IS NULL CONNECT BY NOCYCLE PRIOR s.id = s.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.source-cte-column-list"
+title = "Hierarchy over CTE with explicit output column list"
+kind = "query"
+compare = "unordered"
+sql = """
+WITH src(node_id, parent_node_id, node_name) AS (SELECT id, parent_id, name FROM bs_hierarchy) SELECT s.node_id, s.node_name, LEVEL AS depth FROM src s START WITH s.parent_node_id IS NULL CONNECT BY NOCYCLE PRIOR s.node_id = s.parent_node_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.source-distinct"
+title = "Hierarchy over DISTINCT derived source"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT x.id, LEVEL AS depth FROM (SELECT DISTINCT id, parent_id FROM bs_hierarchy) x START WITH x.parent_id IS NULL CONNECT BY NOCYCLE PRIOR x.id = x.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.source-nested-with"
+title = "Hierarchy over derived source containing WITH"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT x.id, x.name, LEVEL AS depth FROM (WITH base AS (SELECT id, parent_id, name FROM bs_hierarchy) SELECT id, parent_id, name FROM base) x START WITH x.parent_id IS NULL CONNECT BY NOCYCLE PRIOR x.id = x.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "connect-by.reject-no-start"
+title = "CONNECT BY without START WITH is valid Oracle but outside subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, parent_id FROM bs_hierarchy CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "CONNECT_BY_START"
+reason = "Orafit requires an explicit recursion root."
+
+[[case]]
+id = "connect-by.reject-join-source"
+title = "Hierarchy over joined source is outside subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT h.id, d.dname FROM bs_hierarchy h JOIN bs_dept d ON d.deptno = h.deptno START WITH h.parent_id IS NULL CONNECT BY PRIOR h.id = h.parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "CONNECT_BY_SOURCE"
+reason = "Top-level hierarchy joins remain fail-closed; normalize the join in an explicit derived source."
+
+[[case]]
+id = "connect-by.reject-aggregate"
+title = "Aggregate over hierarchy is outside verified evaluation-order subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COUNT(*) AS cnt FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "CONNECT_BY_AGGREGATE"
+reason = "Aggregate/window hierarchy semantics are intentionally fail-closed."
+
+[[case]]
+id = "connect-by.reject-iscycle"
+title = "CONNECT_BY_ISCYCLE is intentionally deferred"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, CONNECT_BY_ISCYCLE AS is_cycle FROM bs_cycle START WITH id = 1 CONNECT BY NOCYCLE PRIOR id = parent_id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "CONNECT_BY_ISCYCLE"
+reason = "Oracle cycle-row semantics require separate differential validation."
+
+[[case]]
+id = "connect-by.reject-order-expression"
+title = "Arbitrary ORDER SIBLINGS expression remains outside bounded rank-path support"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id ORDER SIBLINGS BY CASE WHEN name = 'root' THEN 0 ELSE 1 END, id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "CONNECT_BY_ORDER"
+reason = "Sibling rank paths support source columns and metadata-preserving UPPER/LOWER aliases or ordinals, not arbitrary expressions."
+
+[[case]]
+id = "connect-by.reject-compound-prior"
+title = "Compound CONNECT BY predicate is outside direct PRIOR equality subset"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id, LEVEL AS depth FROM bs_hierarchy START WITH parent_id IS NULL CONNECT BY PRIOR id = parent_id AND name IS NOT NULL
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "CONNECT_BY_PRIOR"
+reason = "Current lowering requires one direct PRIOR equality."

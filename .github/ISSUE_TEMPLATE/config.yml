@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project policy
+    url: https://github.com/yukkes/orafit/blob/main/README.md#project-model
+    about: Orafit is maintainer-led; report reproducible Oracle/PostgreSQL incompatibilities in Issues.

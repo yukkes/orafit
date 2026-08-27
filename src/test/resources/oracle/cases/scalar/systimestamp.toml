@@ -1,0 +1,37 @@
+version = 1
+feature = "datetime"
+
+[[case]]
+id = "datetime.systimestamp-format-length"
+title = "SYSTIMESTAMP deterministic FF6 formatting"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LENGTH(TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF6')) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.systimestamp-statement-stable"
+title = "SYSTIMESTAMP is stable within one SQL statement"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+  WHEN TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF6') =
+       TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF6')
+  THEN 1 ELSE 0
+END AS value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

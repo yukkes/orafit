@@ -1,0 +1,189 @@
+version = 1
+feature = "routines"
+
+[[case]]
+id = "routine.function-positional"
+title = "Scalar function positional arguments"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN ? := bs_fn_add(?, ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "out"
+
+[[case.bind]]
+index = 2
+type = "DECIMAL"
+mode = "in"
+value = "2"
+
+[[case.bind]]
+index = 3
+type = "DECIMAL"
+mode = "in"
+value = "3"
+
+[[case]]
+id = "routine.function-named"
+title = "Scalar function named arguments"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN ? := bs_fn_add(p_b => ?, p_a => ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "out"
+
+[[case.bind]]
+index = 2
+type = "DECIMAL"
+mode = "in"
+value = "3"
+
+[[case.bind]]
+index = 3
+type = "DECIMAL"
+mode = "in"
+value = "2"
+
+[[case]]
+id = "routine.procedure-in-out-inout"
+title = "Procedure IN / OUT / INOUT"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN bs_proc_math(?, ?, ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "5"
+
+[[case.bind]]
+index = 2
+type = "DECIMAL"
+mode = "out"
+
+[[case.bind]]
+index = 3
+type = "DECIMAL"
+mode = "inout"
+value = "10"
+
+[[case]]
+id = "routine.procedure-named"
+title = "Procedure named arguments"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN bs_proc_math(p_both => ?, p_in => ?, p_out => ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "inout"
+value = "10"
+
+[[case.bind]]
+index = 2
+type = "DECIMAL"
+mode = "in"
+value = "5"
+
+[[case.bind]]
+index = 3
+type = "DECIMAL"
+mode = "out"
+
+[[case]]
+id = "routine.package-function"
+title = "Package function call"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN ? := bs_pkg.mul(?, ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "out"
+
+[[case.bind]]
+index = 2
+type = "DECIMAL"
+mode = "in"
+value = "4"
+
+[[case.bind]]
+index = 3
+type = "DECIMAL"
+mode = "in"
+value = "5"
+
+[[case]]
+id = "routine.package-procedure"
+title = "Package procedure call"
+kind = "call"
+compare = "call"
+sql = """
+BEGIN bs_pkg.bump(?, ?); END;
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "inout"
+value = "10"
+
+[[case.bind]]
+index = 2
+type = "DECIMAL"
+mode = "in"
+value = "3"

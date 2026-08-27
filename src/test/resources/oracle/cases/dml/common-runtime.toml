@@ -1,0 +1,83 @@
+version = 1
+feature = "common-runtime-dml"
+
+[[case]]
+id = "common.sysdate-insert"
+title = "SYSDATE in INSERT VALUES populates Oracle DATE"
+kind = "update"
+compare = "update"
+sql = """
+INSERT INTO bs_emp(empno, ename, hired) VALUES (91, 'NOW-I', SYSDATE)
+"""
+observe_sql = """
+SELECT empno, CASE WHEN hired IS NULL THEN 0 ELSE 1 END AS populated
+FROM bs_emp WHERE empno = 91 ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "common.sysdate-update"
+title = "SYSDATE in UPDATE SET populates Oracle DATE"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_emp SET hired = SYSDATE WHERE empno = 1
+"""
+observe_sql = """
+SELECT empno, CASE WHEN hired IS NULL THEN 0 ELSE 1 END AS populated
+FROM bs_emp WHERE empno = 1 ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "common.sequence-insert-nextval"
+title = "Sequence NEXTVAL composes into INSERT VALUES"
+kind = "update"
+compare = "update"
+sql = """
+INSERT INTO bs_dml(id, code, amount) VALUES (bs_seq.NEXTVAL, 'SEQ', 1)
+"""
+observe_sql = """
+SELECT code, CASE WHEN id >= 100 THEN 1 ELSE 0 END AS generated
+FROM bs_dml WHERE code = 'SEQ' ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "common.nvl-insert-bind"
+title = "Oracle scalar functions compose inside INSERT VALUES"
+kind = "update"
+compare = "update"
+sql = """
+INSERT INTO bs_dml(id, code, amount, note) VALUES (303, 'NVL', 3, NVL(?, 'fallback'))
+"""
+observe_sql = """
+SELECT id, code, amount, note FROM bs_dml WHERE id = 303 ORDER BY id
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+null = true

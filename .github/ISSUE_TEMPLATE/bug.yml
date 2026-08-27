@@ -1,0 +1,29 @@
+name: Bug report
+description: Reproducible Orafit product behavior
+title: "bug: "
+body:
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproducer
+      description: Include SQL/JDBC code, inputs, and the smallest setup needed.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Orafit / PostgreSQL versions
+    validations:
+      required: true

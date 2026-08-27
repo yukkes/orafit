@@ -1,0 +1,101 @@
+version = 1
+feature = "application-sql-scope"
+
+[[case]]
+id = "quality.decode-bind-concat-nvl"
+title = "DECODE bind composes with concatenation and NVL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN DECODE(?, 1, 'one', 'other') || ':' || NVL(NULL, 'x') = 'one:x' THEN 1
+         ELSE 0
+       END AS value
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "INTEGER"
+mode = "in"
+value = "1"
+
+[[case]]
+id = "quality.case-number-to-char"
+title = "Implicit NUMBER arithmetic composes with CASE and TO_CHAR"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE
+         WHEN '2' + 3 = 5 AND TO_CHAR(1234.5) = '1234.5' THEN 1
+         ELSE 0
+       END AS value
+FROM dual
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "quality.rownum-inline-nvl"
+title = "Ordered inline-view ROWNUM composes with scalar lowering"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno AS value
+FROM (SELECT ename, empno FROM bs_emp ORDER BY empno DESC)
+WHERE ROWNUM <= 3
+  AND NVL(ename, 'missing') IS NOT NULL
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "quality.listagg-nvl-binds"
+title = "LISTAGG delimiter bind composes with NVL and predicate bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LISTAGG(NVL(ename, 'missing'), ?) WITHIN GROUP (ORDER BY empno) AS names
+FROM bs_emp
+WHERE deptno = ?
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "|"
+[[case.bind]]
+index = 2
+type = "INTEGER"
+mode = "in"
+value = "10"
+
+[[case]]
+id = "quality.connect-by-nvl-siblings"
+title = "CONNECT BY composes with NVL and sibling ordering"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT id,
+       LEVEL AS depth,
+       CASE WHEN NVL(name, 'missing') IS NOT NULL THEN 1 ELSE 0 END AS label_present
+FROM bs_hierarchy
+START WITH parent_id IS NULL
+CONNECT BY PRIOR id = parent_id
+ORDER SIBLINGS BY sort_key, id
+"""
+[case.oracle]
+outcome = "success"
+[case.orafit]
+mode = "same"

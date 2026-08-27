@@ -1,0 +1,255 @@
+version = 1
+feature = "string"
+
+[[case]]
+id = "string.substr-positive"
+title = "SUBSTR positive start"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SUBSTR('abcdef', 2, 3) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.substr-zero"
+title = "SUBSTR start zero behaves as one"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SUBSTR('abcdef', 0, 3) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.substr-negative"
+title = "SUBSTR negative start"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SUBSTR('abcdef', -2, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.substr-zero-length"
+title = "SUBSTR zero length is NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SUBSTR('abcdef', 2, 0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.substr-negative-length"
+title = "SUBSTR negative length is NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SUBSTR('abcdef', 2, -1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.instr-basic"
+title = "INSTR basic"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT INSTR('bananas', 'na') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.instr-start"
+title = "INSTR start position"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT INSTR('bananas', 'na', 4) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.instr-occurrence"
+title = "INSTR occurrence"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT INSTR('bananas', 'na', 1, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.instr-negative-start"
+title = "INSTR searches backward from negative start"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT INSTR('bananas', 'na', -1, 1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.instr-zero-occurrence-error"
+title = "INSTR rejects zero occurrence"
+kind = "query"
+compare = "error"
+sql = """
+SELECT INSTR('bananas', 'na', 1, 0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1428
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-number"
+title = "TO_CHAR number default under deterministic NLS"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(123.45) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-bind"
+title = "TO_CHAR numeric bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "123.45"
+
+[[case]]
+id = "string.composition-where-bind"
+title = "Oracle concatenation semantics survive a WHERE predicate with a bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp WHERE ename || NULL = ? ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "ALICE"
+
+[[case]]
+id = "string.composition-join-on"
+title = "Oracle concatenation semantics survive a JOIN predicate"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT e.empno FROM bs_emp e JOIN bs_emp x ON e.ename || NULL = x.ename ORDER BY e.empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.composition-order-by"
+title = "Oracle concatenation semantics survive ORDER BY"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY job || NULL, empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.composition-update-where"
+title = "Oracle concatenation semantics survive an UPDATE predicate"
+kind = "update"
+compare = "update"
+sql = """
+UPDATE bs_emp SET sal = sal WHERE ename || NULL = ename
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

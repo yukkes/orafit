@@ -1,0 +1,122 @@
+version = 1
+feature = "trim"
+
+[[case]]
+id = "string.trim-basic"
+title = "TRIM removes surrounding spaces"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRIM('  A  ') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.trim-empty-result"
+title = "TRIM normalizes an empty result to Oracle NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN TRIM('   ') IS NULL THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.trim-leading-character"
+title = "TRIM supports an explicit leading character"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRIM(LEADING '0' FROM '00042') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.trim-trailing-character"
+title = "TRIM supports an explicit trailing character"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRIM(TRAILING 'x' FROM '42xxx') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.ltrim-character-set"
+title = "LTRIM preserves Oracle character-set trimming"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LTRIM('0012042', '012') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.rtrim-character-set"
+title = "RTRIM preserves Oracle character-set trimming"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT RTRIM('42xyxy', 'xy') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.ltrim-numeric-source"
+title = "LTRIM converts numeric input through Oracle character semantics"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LTRIM(12345, '1') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.rtrim-empty-result"
+title = "RTRIM normalizes an empty result to Oracle NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN RTRIM('xxx', 'x') IS NULL THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
