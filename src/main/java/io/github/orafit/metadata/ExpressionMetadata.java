@@ -94,6 +94,15 @@ final class ExpressionMetadata {
         if (!(expression instanceof Function function) || function.getName() == null) return auto();
 
         String name = function.getName().toUpperCase(Locale.ROOT);
+        if (name.equals("MOD")
+                && function.getParameters() != null
+                && function.getParameters().stream()
+                        .map(v -> v instanceof SignedExpression signed ? signed.getExpression() : v)
+                        .allMatch(
+                                v ->
+                                        v instanceof LongValue
+                                                || v instanceof DoubleValue
+                                                || v instanceof StringValue)) return number(-127);
         if (List.of("TO_DATE", "LAST_DAY", "ADD_MONTHS").contains(name))
             return meta(Kind.DATE, 7, 0);
         if (name.equals("TO_TIMESTAMP")) return meta(Kind.TIMESTAMP, 0, 9);

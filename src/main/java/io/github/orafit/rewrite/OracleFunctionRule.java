@@ -80,6 +80,15 @@ final class OracleFunctionRule {
                         case "MONTHS_BETWEEN" -> checked(function, name, 2, 2, "months_between");
                         case "LAST_DAY" -> checked(function, name, 1, 1, "last_day");
                         case "TO_NUMBER" -> checked(function, name, 1, 1, "to_number");
+                        case "MOD" ->
+                                coerced(
+                                        function,
+                                        name,
+                                        2,
+                                        2,
+                                        "mod",
+                                        OracleCoercion.Kind.NUMBER,
+                                        OracleCoercion.Kind.NUMBER);
                         case "TO_DATE" -> formatted(function, name, "to_date");
                         case "TO_TIMESTAMP" -> formatted(function, name, "to_timestamp");
                         case "TO_CHAR" -> toChar(function);

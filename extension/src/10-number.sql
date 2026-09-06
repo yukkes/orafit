@@ -9,7 +9,7 @@ DECLARE
     decimal_character text;
     group_character text;
 BEGIN
-    IF value IS NULL OR btrim(value) = '' THEN RETURN NULL; END IF;
+    IF value IS NULL OR value = '' THEN RETURN NULL; END IF;
     IF nls_numeric_characters IS NULL
        OR length(nls_numeric_characters) <> 2
        OR substr(nls_numeric_characters, 1, 1) = substr(nls_numeric_characters, 2, 1) THEN
@@ -18,9 +18,17 @@ BEGIN
     END IF;
     decimal_character := substr(nls_numeric_characters, 1, 1);
     group_character := substr(nls_numeric_characters, 2, 1);
-    normalized := replace(btrim(value), group_character, '');
+    -- Without a format model Oracle accepts decimal text, not group separators
+    -- or PostgreSQL extensions such as NaN, Infinity, radix prefixes and underscores.
+    normalized := btrim(value);
+    IF strpos(normalized, group_character) > 0 THEN
+        RAISE invalid_text_representation;
+    END IF;
     IF decimal_character <> '.' THEN
         normalized := replace(normalized, decimal_character, '.');
+    END IF;
+    IF normalized !~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$' THEN
+        RAISE invalid_text_representation;
     END IF;
     RETURN normalized::numeric;
 EXCEPTION
@@ -67,6 +75,11 @@ CREATE FUNCTION orafit.to_char_number_format(value numeric, format text)
 RETURNS text
 LANGUAGE sql STABLE STRICT PARALLEL SAFE
 AS $$ SELECT pg_catalog.to_char($1, $2) $$;
+
+CREATE FUNCTION orafit.mod(dividend numeric, divisor numeric)
+RETURNS numeric
+LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT CASE WHEN $2 = 0 THEN $1 ELSE pg_catalog.mod($1, $2) END $$;
 
 CREATE FUNCTION orafit.trunc(value numeric)
 RETURNS numeric
