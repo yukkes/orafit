@@ -24,6 +24,7 @@ import net.sf.jsqlparser.expression.operators.arithmetic.Division;
 import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
 import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 
@@ -94,7 +95,7 @@ final class ExpressionMetadata {
         if (!(expression instanceof Function function) || function.getName() == null) return auto();
 
         String name = function.getName().toUpperCase(Locale.ROOT);
-        if (name.equals("MOD")
+        if ((name.equals("MOD") || name.equals("CEIL"))
                 && function.getParameters() != null
                 && function.getParameters().stream()
                         .map(v -> v instanceof SignedExpression signed ? signed.getExpression() : v)
@@ -119,6 +120,9 @@ final class ExpressionMetadata {
                     : meta(Kind.VARCHAR2, null, 0);
         }
         if (name.equals("TO_CHAR")) return meta(Kind.VARCHAR2, toCharWidth(function), 0);
+        if (name.equals("REPLACE")) return meta(Kind.VARCHAR2, replaceWidth(function), 0);
+        if (name.equals("UPPER") && !(firstExpression(function) instanceof StringValue))
+            return meta(Kind.VARCHAR2, width(firstExpression(function)), 0);
         if (name.equals("NVL2")) return meta(Kind.VARCHAR2, nvl2Width(function), 0);
         if (name.equals("DECODE")) return decode(function);
         if (name.equals("NVL")) return meta(Kind.VARCHAR2, maxStringWidth(function), 0);
@@ -190,7 +194,35 @@ final class ExpressionMetadata {
                 function.getParameters() == null || function.getParameters().size() < 2
                         ? null
                         : integer(function.getParameters().get(1));
+        if (width == null
+                && function.getParameters() != null
+                && function.getParameters().size() >= 2) {
+            Expression length = function.getParameters().get(1);
+            Expression unsigned =
+                    length instanceof SignedExpression signed ? signed.getExpression() : length;
+            if (unsigned instanceof DoubleValue) {
+                try {
+                    width = new BigDecimal(length.toString()).toBigInteger().longValueExact();
+                } catch (ArithmeticException ignored) {
+                    return 4000;
+                }
+            }
+        }
         return width == null ? 4000 : Math.toIntExact(Math.max(0, width));
+    }
+
+    private static Integer replaceWidth(Function function) {
+        var args = function.getParameters();
+        if (args == null || args.size() < 2) return null;
+        if (oracleNull(args.get(0))) return 0;
+        String source = text(args.get(0));
+        if (source == null) return null;
+        if (oracleNull(args.get(1))) return source.length();
+        String search = text(args.get(1));
+        String replacement = args.size() < 3 || oracleNull(args.get(2)) ? "" : text(args.get(2));
+        return search == null || replacement == null
+                ? null
+                : source.replace(search, replacement).length();
     }
 
     private static Integer trimWidth(TrimFunction trim) {
@@ -421,8 +453,9 @@ final class ExpressionMetadata {
     private static Integer width(Expression value) {
         if (value instanceof NullValue) return 0;
         if (value instanceof StringValue string) return literalWidth(string);
-        if (value instanceof LongValue || value instanceof DoubleValue)
-            return value.toString().length();
+        if (value instanceof DoubleValue)
+            return value.toString().replaceFirst("^0[.]", ".").length();
+        if (value instanceof LongValue) return value.toString().length();
         if (value instanceof SignedExpression signed) {
             Integer number = width(signed.getExpression());
             return number == null ? null : number + 1;

@@ -290,3 +290,67 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "core.coalesce-single-argument"
+title = "COALESCE rejects a single argument with ORA-00938"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE(1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 938
+
+[case.orafit]
+mode = "same"
+code = "COALESCE_ARITY"
+
+[[case]]
+id = "core.nullif-null-first"
+title = "NULLIF rejects an untyped NULL first argument"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF(NULL,1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "NULLIF_FIRST_NULL"
+
+[[case]]
+id = "core.coalesce-valid"
+title = "COALESCE valid argument lists keep short circuit behavior"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COALESCE(1, 1 / 0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.nullif-typed-null"
+title = "NULLIF accepts a typed NULL first argument"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NULLIF(CAST(NULL AS NUMBER), 1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

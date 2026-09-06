@@ -734,3 +734,70 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "number.ceil-character"
+title = "CEIL implicit numeric conversion preserves NUMBER metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CEIL('1.2') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.ceil-negative-decimal"
+title = "CEIL accepts a negative decimal string and preserves NUMBER metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CEIL('-1.2') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.ceil-bind"
+title = "CEIL accepts a bound character number"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CEIL(?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "1.2"
+
+[[case]]
+id = "number.ceil-invalid"
+title = "CEIL preserves invalid-number conversion errors"
+kind = "query"
+compare = "error"
+sql = """
+SELECT CEIL('bad') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"

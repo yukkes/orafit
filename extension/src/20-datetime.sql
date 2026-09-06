@@ -103,6 +103,14 @@ AS $$
            + ($1 - date_trunc('day', $1))
 $$;
 
+CREATE FUNCTION orafit.add_months(value date, months numeric)
+RETURNS date LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT orafit.add_months($1, pg_catalog.trunc($2)::integer) $$;
+
+CREATE FUNCTION orafit.add_months(value timestamp without time zone, months numeric)
+RETURNS timestamp without time zone LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT orafit.add_months($1, pg_catalog.trunc($2)::integer) $$;
+
 CREATE FUNCTION orafit.months_between(
     left_value timestamp without time zone,
     right_value timestamp without time zone)

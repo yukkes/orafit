@@ -410,3 +410,54 @@ outcome = "success"
 mode = "reject"
 code = "TIMESTAMP_PRECISION"
 reason = "PostgreSQL timestamps have microsecond precision; Orafit rejects Oracle TIMESTAMP literals above six fractional digits instead of silently rounding."
+
+[[case]]
+id = "datetime.add-months-fraction"
+title = "ADD_MONTHS truncates fractional month counts"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(DATE '2024-01-15', 1.9) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.add-months-negative-fraction"
+title = "ADD_MONTHS truncates negative month counts and retains time"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(TIMESTAMP '2024-03-31 12:34:56', -1.9) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.add-months-bound-fraction"
+title = "ADD_MONTHS accepts a numeric month bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(DATE '2024-01-31', ?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "1.9"

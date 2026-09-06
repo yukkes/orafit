@@ -73,8 +73,21 @@ RETURNS numeric LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$ SELECT $1::numeric $$
 -- avoiding NLS-dependent D/G/L/C format elements.
 CREATE FUNCTION orafit.to_char_number_format(value numeric, format text)
 RETURNS text
-LANGUAGE sql STABLE STRICT PARALLEL SAFE
-AS $$ SELECT pg_catalog.to_char($1, $2) $$;
+LANGUAGE plpgsql STABLE STRICT PARALLEL SAFE
+AS $$
+DECLARE formatted text := pg_catalog.to_char(value, format);
+BEGIN
+    IF strpos(formatted, '#') > 0 THEN RETURN repeat('#', length(formatted)); END IF;
+    IF value < 0 AND strpos(formatted, '-') = 0 THEN
+        formatted := regexp_replace(formatted, ' ([0-9.])', '-\1');
+    END IF;
+    RETURN formatted;
+END
+$$;
+
+CREATE FUNCTION orafit.ceil(value numeric)
+RETURNS numeric LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT pg_catalog.ceil($1) $$;
 
 CREATE FUNCTION orafit.mod(dividend numeric, divisor numeric)
 RETURNS numeric

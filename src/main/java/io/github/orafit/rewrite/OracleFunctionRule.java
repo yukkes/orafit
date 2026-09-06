@@ -43,6 +43,27 @@ final class OracleFunctionRule {
         for (Function function : functions(statement)) {
             if (!OracleCoercion.unqualified(function) || function.getName() == null) continue;
             String name = function.getName().toUpperCase(Locale.ROOT);
+            if (name.equals("UPPER")
+                    && function.getParameters() != null
+                    && function.getParameters().size() == 1
+                    && OracleCoercion.knownNumber(function.getParameters().get(0))) {
+                function.setParameters(OracleCoercion.text(function.getParameters().get(0)));
+                changed = true;
+                continue;
+            }
+            if (name.equals("COALESCE")
+                    && function.getParameters() != null
+                    && function.getParameters().size() == 1) {
+                throw new TranslationException(
+                        "COALESCE_ARITY", "COALESCE requires at least two arguments");
+            }
+            if (name.equals("NULLIF")
+                    && function.getParameters() != null
+                    && function.getParameters().size() == 2
+                    && function.getParameters().get(0) instanceof NullValue) {
+                throw new TranslationException(
+                        "NULLIF_FIRST_NULL", "NULLIF first argument cannot be a NULL literal");
+            }
             if (name.equals("TO_TIMESTAMP_TZ")) {
                 throw new TranslationException(
                         "TIMESTAMP_TZ_EXACT",
@@ -67,6 +88,16 @@ final class OracleFunctionRule {
                     switch (name) {
                         case "NVL" -> checked(function, name, 2, 2, "nvl");
                         case "NVL2" -> checked(function, name, 3, 3, "nvl2");
+                        case "REPLACE", "TRANSLATE" ->
+                                coerced(
+                                        function,
+                                        name,
+                                        name.equals("REPLACE") ? 2 : 3,
+                                        3,
+                                        name.toLowerCase(Locale.ROOT),
+                                        OracleCoercion.Kind.TEXT,
+                                        OracleCoercion.Kind.TEXT,
+                                        OracleCoercion.Kind.TEXT);
                         case "CONCAT" ->
                                 coerced(
                                         function,
@@ -76,10 +107,20 @@ final class OracleFunctionRule {
                                         "concat_varchar2",
                                         OracleCoercion.Kind.TEXT,
                                         OracleCoercion.Kind.TEXT);
-                        case "ADD_MONTHS" -> checked(function, name, 2, 2, "add_months");
+                        case "ADD_MONTHS" ->
+                                coerced(
+                                        function,
+                                        name,
+                                        2,
+                                        2,
+                                        "add_months",
+                                        OracleCoercion.Kind.NONE,
+                                        OracleCoercion.Kind.NUMBER);
                         case "MONTHS_BETWEEN" -> checked(function, name, 2, 2, "months_between");
                         case "LAST_DAY" -> checked(function, name, 1, 1, "last_day");
                         case "TO_NUMBER" -> checked(function, name, 1, 1, "to_number");
+                        case "CEIL" ->
+                                coerced(function, name, 1, 1, "ceil", OracleCoercion.Kind.NUMBER);
                         case "MOD" ->
                                 coerced(
                                         function,
