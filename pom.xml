@@ -6,7 +6,7 @@
 
   <groupId>io.github.orafit</groupId>
   <artifactId>orafit-jdbc</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <name>Orafit JDBC</name>
   <description>Oracle-oriented JDBC compatibility layer for PostgreSQL</description>
   <url>https://github.com/yukkes/orafit</url>
@@ -32,7 +32,7 @@
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
-    <orafit.extension.version>1.0.0</orafit.extension.version>
+    <orafit.extension.version>1.0.1</orafit.extension.version>
     <!-- Numeric prefixes define load order, not versions; reserve 90-* for migration helpers. -->
     <orafit.extension.modules>00-core.sql,10-number.sql,20-datetime.sql,30-string.sql,40-regexp.sql,50-listagg.sql,60-connect-by.sql,90-migration.sql</orafit.extension.modules>
     <orafit.test.ojdbc>${project.basedir}/target/no-ojdbc.jar</orafit.test.ojdbc>
