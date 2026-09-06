@@ -713,3 +713,35 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.cast-varchar-overlength"
+title = "CAST to VARCHAR2 shorter than the input"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('abcd' AS VARCHAR2(2)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.varchar-truncation"
+title = "P2 boundary: varchar-truncation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('abcd' AS VARCHAR2(2)) AS a, CAST('ab  ' AS VARCHAR2(2)) AS b, CAST(NULL AS VARCHAR2(2)) AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

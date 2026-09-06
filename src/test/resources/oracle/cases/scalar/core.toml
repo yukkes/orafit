@@ -549,3 +549,104 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+# Observed vendor error code: Oracle 1476; Orafit 0.
+id = "main-gap.nvl-eager-error"
+title = "NVL division-by-zero vendor error code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NVL(1, 1 / 0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.nvl-eager-column"
+title = "P2 boundary: nvl-eager-column"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NVL(empno, 1 / (empno-empno)) AS value FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.nvl-eager-bind"
+title = "P2 boundary: nvl-eager-bind"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NVL(?, 1/?) AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1"
+
+[[case.bind]]
+mode = "in"
+index = 2
+type = "DECIMAL"
+value = "0"
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed rows: Oracle [[0]]; Orafit [[null]].
+id = "p2.reject-stddev-single-row"
+title = "STDDEV of one row returns zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT STDDEV(1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "STDDEV_PRECISION"
+reason = "Deferred: exact Oracle semantics require a separate design; see incompatibility-decisions.md"
+
+
+
+[[case]]
+id = "p2.reject-stddev-window"
+title = "P2 boundary: stddev-window"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, STDDEV(sal) OVER (ORDER BY empno ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "STDDEV_PRECISION"
+reason = "Deferred: exact Oracle semantics require a separate design; see incompatibility-decisions.md"

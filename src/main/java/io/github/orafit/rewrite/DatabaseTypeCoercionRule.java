@@ -111,6 +111,33 @@ public final class DatabaseTypeCoercionRule {
             width = Math.min(width, branchWidth);
         }
         for (int index = 0; index < width; index++) {
+            var setType = io.github.orafit.metadata.ResultMetadataPlanner.setColumnType(set, index);
+            if (setType.kind() == io.github.orafit.translation.ResultMetadataPlan.Kind.AUTO) {
+                for (PlainSelect select : branches) {
+                    if (outputKind(select, index, resolver, inherited)
+                            == ColumnTypeResolver.Kind.FIXED_CHAR)
+                        throw new ResolutionFailure(
+                                new TranslationException(
+                                        "SET_CHAR_WIDTH",
+                                        "CHAR set operations require explicit character widths in every branch"));
+                }
+            }
+            if (setType.kind() == io.github.orafit.translation.ResultMetadataPlan.Kind.VARCHAR2) {
+                for (PlainSelect select : branches) {
+                    if (outputKind(select, index, resolver, inherited)
+                            == ColumnTypeResolver.Kind.FIXED_CHAR) {
+                        var item = select.getSelectItems().get(index);
+                        select.getSelectItems()
+                                .set(
+                                        index,
+                                        SelectItem.from(
+                                                new Function(
+                                                        "orafit.char_text", item.getExpression()),
+                                                item.getAlias()));
+                        change.changed = true;
+                    }
+                }
+            }
             boolean number = false;
             for (PlainSelect select : branches) {
                 ColumnTypeResolver.Kind type = outputKind(select, index, resolver, inherited);

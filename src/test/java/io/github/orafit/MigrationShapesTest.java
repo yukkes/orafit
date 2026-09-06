@@ -85,7 +85,7 @@ public final class MigrationShapesTest {
         String decodeSql = decode.sql().toUpperCase();
         check(decodeSql.contains("CASE"), "DECODE must still lower to CASE");
         check(
-                decodeSql.contains("ORAFIT.TO_NUMBER_BIND(AMOUNT) * -1"),
+                decodeSql.contains("ORAFIT.NUMBER_VALUE(ORAFIT.TO_NUMBER(AMOUNT) * -1::NUMERIC)"),
                 "numeric first result expression must coerce its column operand");
         check(
                 decodeSql.contains("ORAFIT.TO_NUMBER_BIND(AMOUNT)"),

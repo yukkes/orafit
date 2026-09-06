@@ -94,6 +94,7 @@ public final class RewriteEngine {
         changed |= normalizeDerivedAliases(statement);
         changed |= normalizeDuplicateJoinAliases(statement);
         changed |= normalizeSingleRowAggregateOrder(statement);
+        changed |= new SequenceProjectionRule().rewrite(statement);
         changed |= scalar.rewrite(statement, resolver);
         changed |= functions.rewrite(statement);
         changed |= normalizeRowLimiting(statement);
@@ -124,9 +125,25 @@ public final class RewriteEngine {
         }
     }
 
-    private static boolean normalizeRowLimiting(Statement statement) {
+    private static boolean normalizeRowLimiting(Statement statement) throws TranslationException {
         boolean changed = false;
         for (Select select : ParserAdapter.nodes(statement, Select.class)) {
+            if (select.getFetch() != null
+                    && select.getFetch().getFetchParameters().stream()
+                            .anyMatch("PERCENT"::equalsIgnoreCase))
+                throw new TranslationException(
+                        "FETCH_PERCENT",
+                        "FETCH PERCENT requires counting the complete selected row set and is unsupported");
+            if (select.getFetch() != null
+                    && select.getFetch().getExpression() != null
+                    && !select.getFetch().getFetchParameters().stream()
+                            .anyMatch("PERCENT"::equalsIgnoreCase)) {
+                select.getFetch()
+                        .setExpression(
+                                new Function(
+                                        "orafit.row_count", select.getFetch().getExpression()));
+                changed = true;
+            }
             if (select.getOffset() == null || select.getOffset().getOffset() == null) continue;
             select.getOffset()
                     .setOffset(new Function("orafit.row_offset", select.getOffset().getOffset()));

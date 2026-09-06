@@ -40,6 +40,13 @@ import java.util.Locale;
 final class OracleFunctionRule {
     boolean rewrite(Statement statement) throws TranslationException {
         boolean changed = false;
+        for (var analytic :
+                ParserAdapter.nodes(
+                        statement, net.sf.jsqlparser.expression.AnalyticExpression.class)) {
+            if ("STDDEV".equalsIgnoreCase(analytic.getName()))
+                throw new TranslationException(
+                        "STDDEV_PRECISION", "Oracle analytic STDDEV rounding is unsupported");
+        }
         for (Function function : functions(statement)) {
             if (!OracleCoercion.unqualified(function) || function.getName() == null) continue;
             String name = function.getName().toUpperCase(Locale.ROOT);
@@ -87,6 +94,22 @@ final class OracleFunctionRule {
             String helper =
                     switch (name) {
                         case "LENGTH" -> checked(function, name, 1, 1, "length");
+                        case "STDDEV" ->
+                                throw new TranslationException(
+                                        "STDDEV_PRECISION",
+                                        "Oracle STDDEV rounding is outside the supported numeric contract");
+                        case "SQRT" ->
+                                coerced(function, name, 1, 1, "sqrt", OracleCoercion.Kind.NUMBER);
+                        case "REMAINDER" ->
+                                coerced(
+                                        function,
+                                        name,
+                                        2,
+                                        2,
+                                        "remainder",
+                                        OracleCoercion.Kind.NUMBER,
+                                        OracleCoercion.Kind.NUMBER);
+                        case "NEXT_DAY" -> checked(function, name, 2, 2, "next_day");
                         case "NVL" -> checked(function, name, 2, 2, "nvl");
                         case "NVL2" -> checked(function, name, 3, 3, "nvl2");
                         case "REPLACE", "TRANSLATE" ->

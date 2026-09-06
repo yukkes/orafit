@@ -73,6 +73,10 @@ public final class ResultMetadataPlanner {
                     && DatabaseTypeCoercionRule.expressionKind(
                                     subtraction.getRightExpression(), select, resolver)
                             == ColumnTypeResolver.Kind.DATE) type = ExpressionMetadata.number(0);
+            if (statement instanceof SetOperationList set) {
+                Column setType = setColumnType(set, columns.size());
+                if (setType.kind() != Kind.AUTO) type = setType;
+            }
             columns.add(
                     new Column(
                             label(item, sourceLabels, columns.size()),
@@ -86,6 +90,36 @@ public final class ResultMetadataPlanner {
                             type.paddingFallback()));
         }
         return new ResultMetadataPlan(columns);
+    }
+
+    /** Resolves character set outputs using the same widths as scalar metadata. */
+    public static Column setColumnType(SetOperationList set, int index) {
+        Column result = null;
+        for (Select branch : set.getSelects()) {
+            PlainSelect plain = first(branch);
+            if (plain == null || index >= plain.getSelectItems().size())
+                return new Column(null, Kind.AUTO, null, null);
+            Column current =
+                    branch instanceof SetOperationList nested
+                            ? setColumnType(nested, index)
+                            : ExpressionMetadata.type(
+                                    plain.getSelectItems().get(index).getExpression());
+            if ((current.kind() != Kind.CHAR && current.kind() != Kind.VARCHAR2)
+                    || current.precision() == null) return new Column(null, Kind.AUTO, null, null);
+            if (result == null) result = current;
+            else
+                result =
+                        new Column(
+                                null,
+                                result.kind() == Kind.CHAR
+                                                && current.kind() == Kind.CHAR
+                                                && result.precision().equals(current.precision())
+                                        ? Kind.CHAR
+                                        : Kind.VARCHAR2,
+                                Math.max(result.precision(), current.precision()),
+                                0);
+        }
+        return result == null ? new Column(null, Kind.AUTO, null, null) : result;
     }
 
     private static boolean function(Expression expression, String name) {

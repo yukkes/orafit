@@ -12,6 +12,11 @@ import java.util.Set;
 /** One-pass ordinary-SQL lexical normalization and feature gate. */
 public final class SqlGate {
     private static final String[] ORACLE_FUNCTIONS = {
+        "SQRT",
+        "REMAINDER",
+        "NEXT_DAY",
+        "STDDEV",
+        "EXTRACT",
         "LENGTH",
         "NULLIF",
         "COALESCE",
@@ -135,6 +140,9 @@ public final class SqlGate {
         return masked.indexOf('/') >= 0
                 || word(masked, "IN")
                 || word(masked, "OFFSET")
+                || word(masked, "FETCH")
+                || word(masked, "CAST")
+                || masked.indexOf('*') >= 0
                 || wordSequence(masked, "ALTER", "SEQUENCE")
                 || qualifiedUpdateTarget(masked)
                 || containsFunction(masked, METADATA_FUNCTIONS)

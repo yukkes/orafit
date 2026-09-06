@@ -46,6 +46,9 @@ final class ExpressionMetadata {
         if (expression instanceof CastExpression cast && cast.getColDataType() != null) {
             String name =
                     cast.getColDataType().getDataType().stripLeading().toUpperCase(Locale.ROOT);
+            if (name.equals("NUMBER")
+                    && cast.getColDataType().toString().equalsIgnoreCase("NUMBER"))
+                return number(-127);
             if (name.startsWith("NUMBER")) return meta(Kind.NUMBER, null, null);
             if (name.startsWith("DATE")) return meta(Kind.DATE, 7, 0);
             if (name.startsWith("TIMESTAMP")) return meta(Kind.TIMESTAMP, 0, 9);
@@ -62,6 +65,18 @@ final class ExpressionMetadata {
                 && type(subtraction.getRightExpression()).kind() == Kind.DATE) return number(0);
         if (dateAddition(expression)) return meta(Kind.DATE, 7, 0);
         if (expression instanceof Division) return number(literalArithmetic(expression) ? -127 : 0);
+        if ((expression instanceof Addition
+                        || expression instanceof Subtraction
+                        || expression instanceof Multiplication)
+                && !io.github.orafit.parse.ParserAdapter.columns(expression).isEmpty()
+                && io.github.orafit.parse.ParserAdapter.columns(expression).stream()
+                        .anyMatch(
+                                c ->
+                                        List.of("NEXTVAL", "CURRVAL")
+                                                .contains(
+                                                        c.getUnquotedColumnName()
+                                                                .toUpperCase(Locale.ROOT))))
+            return number(0);
         if (expression instanceof Addition
                 || expression instanceof Subtraction
                 || expression instanceof Multiplication
@@ -99,6 +114,11 @@ final class ExpressionMetadata {
         if (!(expression instanceof Function function) || function.getName() == null) return auto();
 
         String name = function.getName().toUpperCase(Locale.ROOT);
+        if (name.equals("ORAFIT.CAST_CHAR")
+                && function.getParameters() != null
+                && function.getParameters().size() == 3
+                && function.getParameters().get(1) instanceof LongValue width)
+            return meta(Kind.CHAR, (int) width.getValue(), 0);
         if ((name.equals("MOD") || name.equals("CEIL"))
                 && function.getParameters() != null
                 && function.getParameters().stream()
@@ -108,7 +128,14 @@ final class ExpressionMetadata {
                                         v instanceof LongValue
                                                 || v instanceof DoubleValue
                                                 || v instanceof StringValue)) return number(-127);
-        if (List.of("TO_DATE", "LAST_DAY", "ADD_MONTHS").contains(name))
+        if (List.of("SQRT", "REMAINDER").contains(name))
+            return number(
+                    function.getParameters() != null
+                                    && function.getParameters().stream()
+                                            .allMatch(ExpressionMetadata::literalArithmetic)
+                            ? -127
+                            : 0);
+        if (List.of("TO_DATE", "LAST_DAY", "ADD_MONTHS", "NEXT_DAY").contains(name))
             return meta(Kind.DATE, 7, 0);
         if (name.equals("COALESCE") && function.getParameters() != null) {
             Column result = null;

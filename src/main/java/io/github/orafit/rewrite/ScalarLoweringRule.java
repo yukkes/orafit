@@ -56,6 +56,7 @@ final class ScalarLoweringRule {
     boolean rewrite(Statement statement, ColumnTypeResolver resolver) throws TranslationException {
         Change change = new Change();
         change.resolver = resolver;
+        change.dml = !(statement instanceof net.sf.jsqlparser.statement.select.Select);
         change.databaseResolvedDecodes.addAll(DecodeLowering.databaseResolved(statement));
         for (PlainSelect select : SelectTrees.plain(statement)) {
             change.select = select;
@@ -194,6 +195,16 @@ final class ScalarLoweringRule {
                     "Oracle TIMESTAMP fractional precision above 6 digits cannot be represented"
                             + " exactly by PostgreSQL");
         }
+        if (expression instanceof net.sf.jsqlparser.expression.ExtractExpression extract) {
+            if (knownDate(extract.getExpression(), change)
+                    && !List.of("YEAR", "MONTH", "DAY")
+                            .contains(extract.getName().toUpperCase(Locale.ROOT))) {
+                throw new TranslationException(
+                        "EXTRACT_FIELD", "ORA-30076: invalid extract field for extract source");
+            }
+            extract.setExpression(lower(extract.getExpression(), change));
+            return extract;
+        }
         if (expression instanceof SignedExpression signed) {
             signed.setExpression(lower(signed.getExpression(), change));
             return signed;
@@ -227,6 +238,12 @@ final class ScalarLoweringRule {
                 }
                 if (type != null
                         && type.stripLeading().toUpperCase(Locale.ROOT).startsWith("NUMBER")) {
+                    if (cast.getColDataType().toString().equalsIgnoreCase("NUMBER")) {
+                        change.changed = true;
+                        return new Function(
+                                "orafit.number_value",
+                                OracleCoercion.number(cast.getLeftExpression()));
+                    }
                     cast.getColDataType()
                             .setDataType(type.replaceFirst("(?i)^\\s*NUMBER", "numeric"));
                     change.changed = true;
@@ -241,6 +258,13 @@ final class ScalarLoweringRule {
                     : new OracleNamedFunctionParameter(named.getName(), lowered);
         }
         if (expression instanceof Column column) {
+            if (change.dml
+                    && column.getTable() != null
+                    && "NEXTVAL".equalsIgnoreCase(column.getUnquotedColumnName())
+                    && !change.dmlNextvals.add(SequenceProjectionRule.sequenceKey(column)))
+                throw new TranslationException(
+                        "SEQUENCE_PROJECTION",
+                        "Repeated NEXTVAL in DML requires a separate deterministic DML design");
             Expression replacement = sequence(column);
             if (replacement != null) {
                 change.changed = true;
@@ -299,6 +323,21 @@ final class ScalarLoweringRule {
             return like;
         }
         if (expression instanceof BinaryExpression binary) {
+            if (binary instanceof Subtraction && change.select != null) {
+                var leftKind =
+                        DatabaseTypeCoercionRule.expressionKind(
+                                binary.getLeftExpression(), change.select, change.resolver);
+                var rightKind =
+                        DatabaseTypeCoercionRule.expressionKind(
+                                binary.getRightExpression(), change.select, change.resolver);
+                if ((leftKind == ColumnTypeResolver.Kind.TIMESTAMP
+                                && rightKind == ColumnTypeResolver.Kind.DATE)
+                        || (leftKind == ColumnTypeResolver.Kind.DATE
+                                && rightKind == ColumnTypeResolver.Kind.TIMESTAMP))
+                    throw new TranslationException(
+                            "TIMESTAMP_DIFFERENCE",
+                            "Mixed TIMESTAMP/DATE subtraction requires an Oracle INTERVAL JDBC contract");
+            }
             binary.setLeftExpression(lower(binary.getLeftExpression(), change));
             binary.setRightExpression(lower(binary.getRightExpression(), change));
             if (binary instanceof Division) {
@@ -321,6 +360,16 @@ final class ScalarLoweringRule {
             }
             lowerImplicitNumber(binary, change);
             lowerDays(binary, change);
+            if (binary instanceof Multiplication) {
+                change.changed = true;
+                binary.setLeftExpression(
+                        OracleCoercion.apply(
+                                binary.getLeftExpression(), OracleCoercion.Kind.NUMBER));
+                binary.setRightExpression(
+                        OracleCoercion.apply(
+                                binary.getRightExpression(), OracleCoercion.Kind.NUMBER));
+                return new Function("orafit.number_value", binary);
+            }
         }
         return expression;
     }
@@ -533,6 +582,8 @@ final class ScalarLoweringRule {
 
     private static final class Change {
         boolean changed;
+        boolean dml;
+        final Set<String> dmlNextvals = new java.util.HashSet<>();
         PlainSelect select;
         ColumnTypeResolver resolver;
         final Set<Function> databaseResolvedDecodes =

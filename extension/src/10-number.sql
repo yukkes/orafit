@@ -203,3 +203,60 @@ BEGIN
     RETURN sign(dividend) * sign(divisor) * quotient * power(10::numeric, -places);
 END
 $$;
+
+-- Normalize the bounded Oracle NUMBER representation after numeric arithmetic
+-- and unconstrained NUMBER casts. The exponent is corrected without relying on
+-- floating point logarithms at powers of 100.
+CREATE FUNCTION orafit.number_value(value numeric)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+DECLARE
+    magnitude numeric := abs(value);
+    exponent integer;
+    result numeric;
+BEGIN
+    IF magnitude = 0 OR magnitude < 1e-130 THEN RETURN 0; END IF;
+    IF magnitude >= 1e126 OR magnitude = 'NaN'::numeric THEN
+        RAISE EXCEPTION 'ORA-01426: numeric overflow' USING ERRCODE = '22003';
+    END IF;
+    exponent := floor(log(100::numeric, magnitude));
+    WHILE magnitude < power(100::numeric, exponent) LOOP exponent := exponent - 1; END LOOP;
+    WHILE magnitude >= power(100::numeric, exponent + 1) LOOP exponent := exponent + 1; END LOOP;
+    result := round(value, 38 - 2 * exponent);
+    IF abs(result) >= 1e126 THEN
+        RAISE EXCEPTION 'ORA-01426: numeric overflow' USING ERRCODE = '22003';
+    END IF;
+    RETURN result;
+END
+$$;
+
+CREATE FUNCTION orafit.sqrt(value numeric)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+BEGIN
+    IF value < 0 THEN
+        RAISE EXCEPTION 'ORA-01428: argument is out of range' USING ERRCODE = '72000';
+    END IF;
+    RETURN orafit.number_value(pg_catalog.sqrt(value::numeric(300,150)));
+END
+$$;
+
+CREATE FUNCTION orafit.remainder(dividend numeric, divisor numeric)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+DECLARE
+    quotient numeric;
+    residue numeric;
+BEGIN
+    IF divisor = 0 THEN
+        RAISE EXCEPTION 'ORA-01476: divisor is equal to zero' USING ERRCODE = '22012';
+    END IF;
+    quotient := div(dividend, divisor);
+    residue := mod(dividend, divisor);
+    IF abs(residue) * 2 > abs(divisor)
+       OR (abs(residue) * 2 = abs(divisor) AND mod(abs(quotient), 2) = 1) THEN
+        residue := residue - sign(dividend) * abs(divisor);
+    END IF;
+    RETURN residue;
+END
+$$;

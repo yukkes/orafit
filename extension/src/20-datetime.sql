@@ -26,11 +26,25 @@ DECLARE
     pattern text := '^[[:space:]]*';
     consumed text;
     digits integer;
+    calendar_parts text[];
+    calendar_date date;
 BEGIN
     IF value IS NULL OR btrim(value) = '' THEN RETURN NULL; END IF;
     pg_format := orafit._pg_datetime_format(format);
     IF btrim(value) ~ '^[0-9]+$' AND upper(left(format, 2)) <> 'FX' THEN
         pg_format := regexp_replace(pg_format, '[^[:alnum:]]', '', 'g');
+    END IF;
+    IF upper(format) IN ('YYYY-MM-DD', 'FXYYYY-MM-DD') THEN
+        calendar_parts := regexp_match(btrim(value), '^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})$');
+        IF calendar_parts IS NOT NULL AND calendar_parts[1]::integer > 0
+           AND calendar_parts[2]::integer BETWEEN 1 AND 12
+           AND calendar_parts[3]::integer BETWEEN 1 AND 31 THEN
+            BEGIN
+                calendar_date := make_date(calendar_parts[1]::integer, calendar_parts[2]::integer, calendar_parts[3]::integer);
+            EXCEPTION WHEN datetime_field_overflow THEN
+                RAISE EXCEPTION 'ORA-01839: date not valid for month specified' USING ERRCODE = 'P1839';
+            END;
+        END IF;
     END IF;
     parsed := pg_catalog.to_timestamp(btrim(value), pg_format)::timestamp without time zone;
     -- The public translator admits numeric format tokens only. Track the input
@@ -65,6 +79,8 @@ BEGIN
     END IF;
     RETURN parsed;
 EXCEPTION
+    WHEN SQLSTATE 'P1839' THEN
+        RAISE EXCEPTION 'ORA-01839: date not valid for month specified' USING ERRCODE = '22008';
     WHEN SQLSTATE 'P1830' THEN
         RAISE EXCEPTION 'ORA-01830: date format picture ends before converting entire input string' USING ERRCODE = '22008';
     WHEN datetime_field_overflow OR invalid_datetime_format OR invalid_parameter_value THEN
@@ -207,6 +223,11 @@ BEGIN
     IF value IS NULL OR format IS NULL OR btrim(format) = '' THEN RETURN NULL; END IF;
     fmt := upper(btrim(format));
     CASE fmt
+        WHEN 'CC', 'SCC' THEN
+            IF extract(year FROM value) < 1 THEN
+                RAISE EXCEPTION 'Orafit: BC century truncation is unsupported' USING ERRCODE = '0A000';
+            END IF;
+            RETURN make_date(((extract(year FROM value)::integer - 1) / 100) * 100 + 1, 1, 1)::timestamp;
         WHEN 'DD', 'DDD', 'J' THEN RETURN date_trunc('day', value);
         WHEN 'HH', 'HH12', 'HH24' THEN RETURN date_trunc('hour', value);
         WHEN 'MI' THEN RETURN date_trunc('minute', value);
@@ -324,3 +345,19 @@ CREATE FUNCTION orafit.days_interval(days numeric)
 RETURNS interval
 LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
 AS $$ SELECT $1 * interval '1 day' $$;
+
+-- English weekday names; preserve time of day.
+CREATE FUNCTION orafit.next_day(value timestamp, weekday text)
+RETURNS timestamp LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+DECLARE target integer; distance integer;
+BEGIN
+    IF weekday = '' THEN RETURN NULL; END IF;
+    target := array_position(ARRAY['SUN','MON','TUE','WED','THU','FRI','SAT'], upper(substr(ltrim(weekday), 1, 3))) - 1;
+    IF target IS NULL THEN
+        RAISE EXCEPTION 'ORA-01846: not a valid day of the week' USING ERRCODE = '22008';
+    END IF;
+    distance := mod(target - extract(dow FROM value)::integer + 6, 7) + 1;
+    RETURN date_trunc('second', value) + make_interval(days => distance);
+END
+$$;

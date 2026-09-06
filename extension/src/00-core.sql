@@ -35,13 +35,13 @@ $$;
 
 CREATE FUNCTION orafit.nvl(value anycompatible, fallback anycompatible)
 RETURNS anycompatible
-LANGUAGE sql IMMUTABLE PARALLEL SAFE
-AS $$ SELECT COALESCE($1, $2) $$;
+LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE
+AS $$ BEGIN RETURN COALESCE(value, fallback); END $$;
 
 CREATE FUNCTION orafit.nvl(value text, fallback text)
 RETURNS text
-LANGUAGE sql IMMUTABLE PARALLEL SAFE
-AS $$ SELECT COALESCE(NULLIF($1, ''), NULLIF($2, '')) $$;
+LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE
+AS $$ BEGIN RETURN COALESCE(NULLIF(value, ''), NULLIF(fallback, '')); END $$;
 
 CREATE FUNCTION orafit.nvl2(
     expression anyelement,
@@ -73,3 +73,8 @@ CREATE FUNCTION orafit.systimestamp()
 RETURNS timestamp with time zone
 LANGUAGE sql STABLE PARALLEL SAFE
 AS $$ SELECT statement_timestamp() $$;
+
+-- FETCH has a different NULL rule from OFFSET; both truncate fractional counts.
+CREATE FUNCTION orafit.row_count(value numeric)
+RETURNS bigint LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$ SELECT CASE WHEN $1 IS NULL THEN 0::bigint ELSE orafit.row_offset($1) END $$;

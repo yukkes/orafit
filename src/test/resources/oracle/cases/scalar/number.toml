@@ -919,3 +919,262 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+# Observed 実行結果: Oracle ORA-01426; Orafit 成功.
+id = "main-gap.number-overflow"
+title = "NUMBER arithmetic overflow"
+kind = "query"
+compare = "error"
+sql = """
+SELECT 1e125 * 1e125 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1426
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed rows: Oracle [[0]]; Orafit [[1e-260]].
+id = "main-gap.number-underflow"
+title = "NUMBER arithmetic underflow"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1e-130 * 1e-130 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed vendor error code: Oracle 1428; Orafit 0.
+id = "main-gap.sqrt-negative"
+title = "SQRT domain error preserves the Oracle vendor code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT SQRT(-1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1428
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed rows: Oracle [[1.23456789012345678901234567890123456789]]; Orafit [[1.234567890123456789012345678901234567890123456789]].
+# Observed JDBC metadata: Oracle scale=-127; Orafit scale=0.
+id = "main-gap.number-cast-rounding"
+title = "number cast rounding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(1.234567890123456789012345678901234567890123456789 AS NUMBER) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.remainder-ties"
+title = "REMAINDER execution"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REMAINDER(7, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.number-range"
+title = "P2 boundary: number-range"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1e-130 * 1 AS a, 1e-130 * 0.1 AS b, -1e125 * 1 AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-negative-overflow"
+title = "P2 boundary: number-negative-overflow"
+kind = "query"
+compare = "error"
+sql = """
+SELECT -1e125 * 100 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1426
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-cast-signs"
+title = "P2 boundary: number-cast-signs"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(-1.234567890123456789012345678901234567890123456789 AS NUMBER) AS a, CAST(1234567890123456789012345678901234567890123456789 AS NUMBER) AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-cast-null"
+title = "P2 boundary: number-cast-null"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(NULL AS NUMBER) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.sqrt-positive"
+title = "P2 boundary: sqrt-positive"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SQRT(0) AS a, SQRT(4) AS b, SQRT(2) AS c, SQRT(NULL) AS d FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.remainder-signs"
+title = "P2 boundary: remainder-signs"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REMAINDER(5,2) AS a, REMAINDER(-7,2) AS b, REMAINDER(7,-2) AS c, REMAINDER(-5,-2) AS d, REMAINDER(1.5,1) AS e, REMAINDER(NULL,2) AS f FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.remainder-zero"
+title = "P2 boundary: remainder-zero"
+kind = "query"
+compare = "error"
+sql = """
+SELECT REMAINDER(1,0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.multiply-bind"
+title = "P2 boundary: multiply-bind"
+kind = "query"
+compare = "error"
+sql = """
+SELECT ? * ? AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1e125"
+
+[[case.bind]]
+mode = "in"
+index = 2
+type = "DECIMAL"
+value = "1e125"
+
+[case.oracle]
+outcome = "error"
+error_code = 1426
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-cast-bind"
+title = "P2 boundary: number-cast-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(? AS NUMBER) AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1.234567890123456789012345678901234567890123456789"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.multiply-integer-range"
+title = "P2 boundary: multiply-integer-range"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 50000 * 50000 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

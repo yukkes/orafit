@@ -12,6 +12,7 @@ final class JdbcErrors {
 
     static SQLException fromTranslation(TranslationException failure) {
         return switch (failure.code()) {
+            case "EXTRACT_FIELD" -> new SQLException(failure.getMessage(), "99999", 30076, failure);
             case "COALESCE_ARITY" ->
                     new SQLException(
                             "ORA-00938: not enough arguments for function", "42000", 938, failure);

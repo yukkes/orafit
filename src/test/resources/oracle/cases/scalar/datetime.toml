@@ -621,3 +621,218 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+# Observed vendor error code: Oracle 1839; Orafit 1861.
+id = "main-gap.date-invalid-day"
+title = "TO_DATE invalid calendar date vendor error code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-02-30', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1839
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed vendor error code: Oracle 30076; Orafit 0.
+id = "main-gap.date-extract-hour"
+title = "EXTRACT HOUR from DATE vendor error code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT EXTRACT(HOUR FROM DATE '2024-01-02') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 30076
+
+[case.orafit]
+mode = "same"
+code = "EXTRACT_FIELD"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.next-day"
+title = "next day"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NEXT_DAY(DATE '2024-01-01','MONDAY') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.date-trunc-century"
+title = "date trunc century"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(DATE '2000-06-01','CC') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.date-leap-valid"
+title = "P2 boundary: date-leap-valid"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-02-29', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.date-leap-invalid"
+title = "P2 boundary: date-leap-invalid"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2023-02-29', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1839
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.date-april-invalid"
+title = "P2 boundary: date-april-invalid"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-04-31', 'FXYYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1839
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.date-extract-minute"
+title = "P2 boundary: date-extract-minute"
+kind = "query"
+compare = "error"
+sql = """
+SELECT EXTRACT(MINUTE FROM CAST(TIMESTAMP '2024-01-01 12:34:56' AS DATE)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 30076
+
+[case.orafit]
+mode = "same"
+code = "EXTRACT_FIELD"
+
+[[case]]
+id = "p2.timestamp-extract-hour"
+title = "P2 boundary: timestamp-extract-hour"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT EXTRACT(HOUR FROM TIMESTAMP '2024-01-01 12:34:56') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.next-day-week"
+title = "P2 boundary: next-day-week"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NEXT_DAY(DATE '2024-01-01', 'SUN') AS a, NEXT_DAY(TIMESTAMP '2024-01-01 12:34:56.9', 'tuesday') AS b, NEXT_DAY(CAST(NULL AS DATE), 'MON') AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.next-day-invalid"
+title = "P2 boundary: next-day-invalid"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NEXT_DAY(DATE '2024-01-01', 'BAD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1846
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.century-boundaries"
+title = "P2 boundary: century-boundaries"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(DATE '1900-12-31','CC') AS a, TRUNC(DATE '1901-01-01','CC') AS b, TRUNC(DATE '2001-01-01','SCC') AS c, TRUNC(DATE '0001-01-01','CC') AS d FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "p2.reject-timestamp-date-difference"
+title = "timestamp date difference"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TIMESTAMP '2024-01-02 01:00:00' - DATE '2024-01-01' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "TIMESTAMP_DIFFERENCE"
+reason = "Deferred: exact Oracle semantics require a separate design; see incompatibility-decisions.md"
