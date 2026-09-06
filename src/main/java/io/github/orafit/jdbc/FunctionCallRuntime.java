@@ -6,7 +6,11 @@ import io.github.orafit.translation.Translation;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.sql.*;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /** Callable adapter for scalar function returns; procedures are isolated in ProcedureRuntime. */
 final class FunctionCallRuntime {
