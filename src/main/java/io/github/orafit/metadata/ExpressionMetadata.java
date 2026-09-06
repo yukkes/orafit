@@ -57,7 +57,11 @@ final class ExpressionMetadata {
             return meta(Kind.VARCHAR2, 4000, 0);
         if (expression instanceof Concat concat) return concat(concat);
         if (expression instanceof CaseExpression value && numericCase(value)) return number(-127);
+        if (expression instanceof Subtraction subtraction
+                && type(subtraction.getLeftExpression()).kind() == Kind.DATE
+                && type(subtraction.getRightExpression()).kind() == Kind.DATE) return number(0);
         if (dateAddition(expression)) return meta(Kind.DATE, 7, 0);
+        if (expression instanceof Division) return number(literalArithmetic(expression) ? -127 : 0);
         if (expression instanceof Addition
                 || expression instanceof Subtraction
                 || expression instanceof Multiplication
@@ -106,6 +110,22 @@ final class ExpressionMetadata {
                                                 || v instanceof StringValue)) return number(-127);
         if (List.of("TO_DATE", "LAST_DAY", "ADD_MONTHS").contains(name))
             return meta(Kind.DATE, 7, 0);
+        if (name.equals("COALESCE") && function.getParameters() != null) {
+            Column result = null;
+            for (Expression argument : function.getParameters()) {
+                if (argument instanceof NullValue) continue;
+                Column current = type(argument);
+                if (current.kind() != Kind.CHAR) {
+                    result = null;
+                    break;
+                }
+                if (result == null
+                        || (current.precision() != null
+                                && result.precision() != null
+                                && current.precision() > result.precision())) result = current;
+            }
+            if (result != null) return result;
+        }
         if (name.equals("TO_TIMESTAMP")) return meta(Kind.TIMESTAMP, 0, 9);
         if (name.equals("LISTAGG") || name.equals("SYS_CONNECT_BY_PATH"))
             return meta(Kind.VARCHAR2, 4000, 0);
@@ -258,6 +278,24 @@ final class ExpressionMetadata {
         if (expression instanceof StringValue value) return value.getValue();
         if (expression instanceof LongValue value) return Long.toString(value.getValue());
         return null;
+    }
+
+    private static boolean literalArithmetic(Expression expression) {
+        if (expression instanceof LongValue
+                || expression instanceof DoubleValue
+                || expression instanceof StringValue) return true;
+        if (expression instanceof SignedExpression signed)
+            return literalArithmetic(signed.getExpression());
+        if (expression
+                        instanceof
+                        net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList<
+                                        ?>
+                                list
+                && list.size() == 1) return literalArithmetic(list.get(0));
+        if (expression instanceof net.sf.jsqlparser.expression.BinaryExpression binary)
+            return literalArithmetic(binary.getLeftExpression())
+                    && literalArithmetic(binary.getRightExpression());
+        return false;
     }
 
     private static boolean dateAddition(Expression expression) {

@@ -461,3 +461,163 @@ index = 1
 type = "DECIMAL"
 mode = "in"
 value = "1.9"
+
+[[case]]
+id = "p1.date-subtraction"
+title = "DATE subtraction returns a NUMBER of days"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DATE '2024-03-02' - DATE '2024-03-01' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.timestamp-cast-date"
+title = "CAST TIMESTAMP AS DATE discards fractional seconds"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(TIMESTAMP '2024-01-02 03:04:05.123456' AS DATE) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.to-date-trailing-data"
+title = "TO_DATE rejects trailing data beyond the format"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-01-02garbage', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1830
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-difference-time"
+title = "P1 boundary: date-difference-time"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-01-02 01:00:00','YYYY-MM-DD HH24:MI:SS') - TO_DATE('2024-01-01 00:00:00','YYYY-MM-DD HH24:MI:SS') AS a, DATE '2024-01-01' - DATE '2024-01-02' AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-cast-rounding"
+title = "P1 boundary: date-cast-rounding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(TIMESTAMP '2024-01-02 23:59:59.999999' AS DATE) AS a, CAST(CAST(NULL AS TIMESTAMP) AS DATE) AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-variable-digits"
+title = "P1 boundary: date-variable-digits"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-1-2','YYYY-MM-DD') AS a, TO_DATE('20240102','YYYY-MM-DD') AS b, TO_DATE('2024/01/02 ','YYYY-MM-DD') AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-suffix-digits"
+title = "P1 boundary: date-suffix-digits"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-01-021','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1830
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-suffix-time"
+title = "P1 boundary: date-suffix-time"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-01-02 03:04:05oops','YYYY-MM-DD HH24:MI:SS') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1830
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-columns"
+title = "P1 boundary: date-columns"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, hired - DATE '2020-01-01' AS value FROM bs_emp ORDER BY empno
+"""
+
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-cast-bind"
+title = "P1 boundary: date-cast-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(? AS DATE) AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "TIMESTAMP"
+value = "2024-01-02 23:59:59.999999"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

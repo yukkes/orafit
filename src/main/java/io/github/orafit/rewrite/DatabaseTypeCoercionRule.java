@@ -54,9 +54,19 @@ import java.util.Map;
  * Applies implicit Oracle character-to-NUMBER conversion only where physical metadata proves it.
  */
 public final class DatabaseTypeCoercionRule {
+    /** Resolves expression families for scalar lowering and its JDBC metadata plan. */
+    public static ColumnTypeResolver.Kind expressionKind(
+            Expression value, PlainSelect select, ColumnTypeResolver resolver)
+            throws TranslationException {
+        try {
+            return kind(value, Scope.from(select, resolver));
+        } catch (ResolutionFailure failure) {
+            throw failure.cause;
+        }
+    }
+
     public boolean rewrite(Statement statement, ColumnTypeResolver resolver)
             throws TranslationException {
-        if (resolver == ColumnTypeResolver.NONE) return false;
         Change change = new Change();
         try {
             Map<String, Map<String, ColumnTypeResolver.Kind>> inherited =
@@ -186,7 +196,10 @@ public final class DatabaseTypeCoercionRule {
                 kind(item.getExpression(), Scope.from(select, resolver, inherited));
         Expression converted;
         if (textual(current)) {
-            converted = OracleCoercion.numberDeferred(item.getExpression());
+            throw new ResolutionFailure(
+                    new TranslationException(
+                            "SET_DATATYPE",
+                            "ORA-01790: expression must have same datatype as corresponding expression"));
         } else if (current == ColumnTypeResolver.Kind.UNKNOWN
                 && item.getExpression() instanceof NullValue) {
             converted = new CastExpression(item.getExpression(), "numeric");
@@ -332,7 +345,7 @@ public final class DatabaseTypeCoercionRule {
         protected <S> Void visitBinaryExpression(BinaryExpression binary, S context) {
             super.visitBinaryExpression(binary, context);
             preserveFixedCharPaddingComparison(binary);
-            if (!numericContext(binary)) return null;
+            if (scope.resolver == ColumnTypeResolver.NONE || !numericContext(binary)) return null;
             ColumnTypeResolver.Kind left = kind(binary.getLeftExpression(), scope);
             ColumnTypeResolver.Kind right = kind(binary.getRightExpression(), scope);
             if (left == ColumnTypeResolver.Kind.NUMBER
@@ -353,6 +366,20 @@ public final class DatabaseTypeCoercionRule {
             ColumnTypeResolver.Kind left = kind(binary.getLeftExpression(), scope);
             ColumnTypeResolver.Kind right = kind(binary.getRightExpression(), scope);
             if (left == ColumnTypeResolver.Kind.FIXED_CHAR
+                    && right == ColumnTypeResolver.Kind.TEXT
+                    && !(binary.getRightExpression() instanceof StringValue)
+                    && !paddingFunction(binary.getRightExpression())) {
+                binary.setLeftExpression(
+                        new Function("orafit.char_text", binary.getLeftExpression()));
+                change.changed = true;
+            } else if (right == ColumnTypeResolver.Kind.FIXED_CHAR
+                    && left == ColumnTypeResolver.Kind.TEXT
+                    && !(binary.getLeftExpression() instanceof StringValue)
+                    && !paddingFunction(binary.getLeftExpression())) {
+                binary.setRightExpression(
+                        new Function("orafit.char_text", binary.getRightExpression()));
+                change.changed = true;
+            } else if (left == ColumnTypeResolver.Kind.FIXED_CHAR
                     && paddingFunction(binary.getRightExpression())) {
                 binary.setRightExpression(
                         new CastExpression(binary.getRightExpression(), "bpchar"));
@@ -367,7 +394,29 @@ public final class DatabaseTypeCoercionRule {
         @Override
         public <S> Void visit(Function function, S context) {
             super.visit(function, context);
-            if (function.getName() != null
+            if ((OracleCoercion.unqualified(function, "NULLIF")
+                            || OracleCoercion.unqualified(function, "COALESCE"))
+                    && function.getParameters() != null) {
+                boolean number = false, text = false;
+                for (Expression argument : function.getParameters()) {
+                    ColumnTypeResolver.Kind type = kind(argument, scope);
+                    if (argument instanceof JdbcNamedParameter
+                            || argument instanceof JdbcParameter) {
+                        throw new ResolutionFailure(
+                                new TranslationException(
+                                        "FUNCTION_BIND_TYPE",
+                                        "NULLIF/COALESCE bind arguments require an explicit CAST to preserve Oracle datatype validation"));
+                    }
+                    number |= type == ColumnTypeResolver.Kind.NUMBER;
+                    text |= textual(type);
+                }
+                if (number && text)
+                    throw new ResolutionFailure(
+                            new TranslationException(
+                                    "FUNCTION_DATATYPE", "ORA-00932: inconsistent datatypes"));
+            }
+            if (scope.resolver != ColumnTypeResolver.NONE
+                    && function.getName() != null
                     && List.of("SUM", "AVG").contains(function.getName().toUpperCase(Locale.ROOT))
                     && function.getParameters() != null
                     && function.getParameters().size() == 1) {
@@ -422,6 +471,11 @@ public final class DatabaseTypeCoercionRule {
     }
 
     private static ColumnTypeResolver.Kind kind(Expression value, Scope scope) {
+        if (value instanceof net.sf.jsqlparser.expression.DateTimeLiteralExpression literal)
+            return literal.getType()
+                            == net.sf.jsqlparser.expression.DateTimeLiteralExpression.DateTime.DATE
+                    ? ColumnTypeResolver.Kind.DATE
+                    : ColumnTypeResolver.Kind.TIMESTAMP;
         if (value == null || value instanceof NullValue) return ColumnTypeResolver.Kind.UNKNOWN;
         if (value instanceof StringValue || OracleCoercion.knownText(value))
             return ColumnTypeResolver.Kind.TEXT;
@@ -435,7 +489,14 @@ public final class DatabaseTypeCoercionRule {
                 || value instanceof Division) return ColumnTypeResolver.Kind.NUMBER;
         if (value instanceof Column column) return scope.resolve(column);
         if (value instanceof CastExpression cast && cast.getColDataType() != null) {
-            String type = cast.getColDataType().getDataType().toUpperCase(Locale.ROOT);
+            String type =
+                    cast.getColDataType()
+                            .getDataType()
+                            .toUpperCase(Locale.ROOT)
+                            .replaceFirst("\\s*\\(.*", "")
+                            .strip();
+            if (type.equals("DATE")) return ColumnTypeResolver.Kind.DATE;
+            if (type.equals("TIMESTAMP")) return ColumnTypeResolver.Kind.TIMESTAMP;
             if (type.matches("NUMBER|NUMERIC|DECIMAL|INTEGER|BIGINT|SMALLINT|REAL|FLOAT|DOUBLE"))
                 return ColumnTypeResolver.Kind.NUMBER;
             if (type.matches("CHAR|NCHAR|BPCHAR")) return ColumnTypeResolver.Kind.FIXED_CHAR;
@@ -444,7 +505,18 @@ public final class DatabaseTypeCoercionRule {
         }
         if (value instanceof Function function && function.getName() != null) {
             String name = function.getName().toUpperCase(Locale.ROOT);
-            if (List.of("COUNT", "SUM", "AVG").contains(name))
+            if (List.of(
+                            "TO_DATE",
+                            "ADD_MONTHS",
+                            "LAST_DAY",
+                            "ORAFIT.TO_DATE",
+                            "ORAFIT.ADD_MONTHS",
+                            "ORAFIT.LAST_DAY",
+                            "ORAFIT.CAST_DATE",
+                            "ORAFIT.SYSDATE")
+                    .contains(name)) return ColumnTypeResolver.Kind.DATE;
+            if (name.equals("ORAFIT.CAST_CHAR")) return ColumnTypeResolver.Kind.FIXED_CHAR;
+            if (List.of("COUNT", "SUM", "AVG", "ORAFIT.DIVIDE").contains(name))
                 return ColumnTypeResolver.Kind.NUMBER;
             if (List.of("NVL", "ORAFIT.NVL", "MIN", "MAX").contains(name)
                     && function.getParameters() != null

@@ -167,3 +167,39 @@ CREATE FUNCTION orafit.to_number(value real)
 RETURNS numeric LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$ SELECT $1::numeric $$;
 CREATE FUNCTION orafit.to_number(value double precision)
 RETURNS numeric LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$ SELECT $1::numeric $$;
+-- NUMBER division retains twenty base-100 digits. Use integer quotient/remainder
+-- for rounding so PostgreSQL's default numeric division scale cannot lose digits.
+CREATE FUNCTION orafit.divide(dividend numeric, divisor numeric)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+DECLARE
+    a numeric := abs(dividend);
+    b numeric := abs(divisor);
+    exponent integer;
+    places integer;
+    factor numeric;
+    quotient numeric;
+BEGIN
+    IF divisor = 0 THEN
+        RAISE EXCEPTION 'ORA-01476: divisor is equal to zero' USING ERRCODE = '22012';
+    END IF;
+    IF dividend = 0 THEN RETURN 0; END IF;
+    IF a = 'NaN'::numeric OR b = 'NaN'::numeric OR a = 'Infinity'::numeric OR b = 'Infinity'::numeric THEN
+        RAISE EXCEPTION 'Orafit: non-finite NUMBER division is unsupported' USING ERRCODE = '0A000';
+    END IF;
+    exponent := floor(log(100::numeric, a) - log(100::numeric, b));
+    -- Correct logarithm rounding at exact powers of 100 by comparing integers.
+    WHILE a < b * power(100::numeric, exponent) LOOP exponent := exponent - 1; END LOOP;
+    WHILE a >= b * power(100::numeric, exponent + 1) LOOP exponent := exponent + 1; END LOOP;
+    IF exponent < -65 THEN RETURN 0; END IF;
+    IF exponent > 62 THEN
+        RAISE EXCEPTION 'ORA-01426: numeric overflow' USING ERRCODE = '22003';
+    END IF;
+    places := 38 - 2 * exponent;
+    factor := power(10::numeric, abs(places));
+    IF places >= 0 THEN a := a * factor; ELSE b := b * factor; END IF;
+    quotient := div(a, b);
+    IF mod(a, b) * 2 >= b THEN quotient := quotient + 1; END IF;
+    RETURN sign(dividend) * sign(divisor) * quotient * power(10::numeric, -places);
+END
+$$;

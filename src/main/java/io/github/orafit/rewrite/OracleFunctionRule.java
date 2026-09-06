@@ -86,6 +86,7 @@ final class OracleFunctionRule {
             }
             String helper =
                     switch (name) {
+                        case "LENGTH" -> checked(function, name, 1, 1, "length");
                         case "NVL" -> checked(function, name, 2, 2, "nvl");
                         case "NVL2" -> checked(function, name, 3, 3, "nvl2");
                         case "REPLACE", "TRANSLATE" ->

@@ -241,3 +241,20 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "p1.union-mixed-types"
+title = "UNION ALL rejects character and numeric datatype groups"
+kind = "query"
+compare = "error"
+sql = """
+SELECT 1 AS value FROM dual UNION ALL SELECT '1' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1790
+
+[case.orafit]
+mode = "same"
+code = "SET_DATATYPE"

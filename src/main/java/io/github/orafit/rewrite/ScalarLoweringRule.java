@@ -1,5 +1,6 @@
 package io.github.orafit.rewrite;
 
+import io.github.orafit.translation.ColumnTypeResolver;
 import io.github.orafit.translation.TranslationException;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
@@ -52,10 +53,12 @@ import java.util.Set;
 
 /** Lowers Oracle scalar operators using only public JSqlParser expression APIs. */
 final class ScalarLoweringRule {
-    boolean rewrite(Statement statement) throws TranslationException {
+    boolean rewrite(Statement statement, ColumnTypeResolver resolver) throws TranslationException {
         Change change = new Change();
+        change.resolver = resolver;
         change.databaseResolvedDecodes.addAll(DecodeLowering.databaseResolved(statement));
         for (PlainSelect select : SelectTrees.plain(statement)) {
+            change.select = select;
             normalizeDerivedAggregateNumbers(select, change);
             lowerItems(select.getSelectItems(), change);
             select.setWhere(lower(select.getWhere(), change));
@@ -191,10 +194,37 @@ final class ScalarLoweringRule {
                     "Oracle TIMESTAMP fractional precision above 6 digits cannot be represented"
                             + " exactly by PostgreSQL");
         }
+        if (expression instanceof SignedExpression signed) {
+            signed.setExpression(lower(signed.getExpression(), change));
+            return signed;
+        }
         if (expression instanceof CastExpression cast) {
             cast.setLeftExpression(lower(cast.getLeftExpression(), change));
             if (cast.getColDataType() != null) {
                 String type = cast.getColDataType().getDataType();
+                var charType =
+                        java.util.regex.Pattern.compile(
+                                        "(?i)^CHAR\\s*\\(\\s*(\\d+)\\s*(BYTE|CHAR)?\\s*\\)$")
+                                .matcher(cast.getColDataType().toString());
+                if (charType.matches()) {
+                    change.changed = true;
+                    return new Function(
+                            "orafit.cast_char",
+                            OracleCoercion.text(cast.getLeftExpression()),
+                            new LongValue(charType.group(1)),
+                            new net.sf.jsqlparser.expression.BooleanValue(
+                                    !"CHAR".equalsIgnoreCase(charType.group(2))));
+                }
+                if ("DATE".equalsIgnoreCase(type)) {
+                    change.changed = true;
+                    return new Function(
+                            "orafit.cast_date",
+                            new CastExpression(cast.getLeftExpression(), "timestamp"));
+                }
+                if ("VARCHAR2".equalsIgnoreCase(type)) {
+                    cast.getColDataType().setDataType("varchar");
+                    change.changed = true;
+                }
                 if (type != null
                         && type.stripLeading().toUpperCase(Locale.ROOT).startsWith("NUMBER")) {
                     cast.getColDataType()
@@ -271,6 +301,24 @@ final class ScalarLoweringRule {
         if (expression instanceof BinaryExpression binary) {
             binary.setLeftExpression(lower(binary.getLeftExpression(), change));
             binary.setRightExpression(lower(binary.getRightExpression(), change));
+            if (binary instanceof Division) {
+                change.changed = true;
+                return new Function(
+                        "orafit.divide",
+                        OracleCoercion.apply(
+                                binary.getLeftExpression(), OracleCoercion.Kind.NUMBER),
+                        OracleCoercion.apply(
+                                binary.getRightExpression(), OracleCoercion.Kind.NUMBER));
+            }
+            if (binary instanceof Subtraction
+                    && knownDate(binary.getLeftExpression(), change)
+                    && knownDate(binary.getRightExpression(), change)) {
+                change.changed = true;
+                return new Function(
+                        "orafit.date_difference",
+                        binary.getLeftExpression(),
+                        binary.getRightExpression());
+            }
             lowerImplicitNumber(binary, change);
             lowerDays(binary, change);
         }
@@ -346,7 +394,8 @@ final class ScalarLoweringRule {
                 || binary instanceof MinorThanEquals;
     }
 
-    private static void lowerDays(BinaryExpression binary, Change change) {
+    private static void lowerDays(BinaryExpression binary, Change change)
+            throws TranslationException {
         if (!(binary instanceof Addition || binary instanceof Subtraction)) return;
         Expression left = binary.getLeftExpression(), right = binary.getRightExpression();
         if (knownDate(left) && dayNumber(right)) {
@@ -392,11 +441,19 @@ final class ScalarLoweringRule {
         return end - dot - 1;
     }
 
+    private static boolean knownDate(Expression value, Change change) throws TranslationException {
+        if (change.select != null
+                && DatabaseTypeCoercionRule.expressionKind(value, change.select, change.resolver)
+                        == ColumnTypeResolver.Kind.DATE) return true;
+        return knownDate(value);
+    }
+
     private static boolean knownDate(Expression value) {
         if (value instanceof DateTimeLiteralExpression literal
                 && literal.getType() == DateTimeLiteralExpression.DateTime.DATE) return true;
         if (!(value instanceof Function function) || function.getName() == null) return false;
-        return "orafit.sysdate".equalsIgnoreCase(function.getName())
+        return "orafit.cast_date".equalsIgnoreCase(function.getName())
+                || "orafit.sysdate".equalsIgnoreCase(function.getName())
                 || OracleCoercion.unqualified(function, "TO_DATE")
                 || OracleCoercion.unqualified(function, "LAST_DAY")
                 || OracleCoercion.unqualified(function, "ADD_MONTHS");
@@ -476,6 +533,8 @@ final class ScalarLoweringRule {
 
     private static final class Change {
         boolean changed;
+        PlainSelect select;
+        ColumnTypeResolver resolver;
         final Set<Function> databaseResolvedDecodes =
                 Collections.newSetFromMap(new IdentityHashMap<>());
     }

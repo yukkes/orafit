@@ -1,10 +1,13 @@
 package io.github.orafit.metadata;
 
 import io.github.orafit.parse.ParserAdapter;
+import io.github.orafit.rewrite.DatabaseTypeCoercionRule;
+import io.github.orafit.translation.ColumnTypeResolver;
 import io.github.orafit.translation.ResultMetadataPlan;
 import io.github.orafit.translation.ResultMetadataPlan.Column;
 import io.github.orafit.translation.ResultMetadataPlan.Kind;
 import io.github.orafit.translation.ResultMetadataPlan.Source;
+import io.github.orafit.translation.TranslationException;
 
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.BinaryExpression;
@@ -34,11 +37,18 @@ import java.util.Locale;
 
 /** Builds Oracle-facing result metadata from one parsed SELECT without reparsing rendered SQL. */
 public final class ResultMetadataPlanner {
-    public ResultMetadataPlan plan(Statement statement) {
+    public ResultMetadataPlan plan(Statement statement) throws TranslationException {
         return plan(statement, null);
     }
 
-    public ResultMetadataPlan plan(Statement statement, String sourceSql) {
+    public ResultMetadataPlan plan(Statement statement, String sourceSql)
+            throws TranslationException {
+        return plan(statement, sourceSql, ColumnTypeResolver.NONE);
+    }
+
+    public ResultMetadataPlan plan(
+            Statement statement, String sourceSql, ColumnTypeResolver resolver)
+            throws TranslationException {
         boolean setOperation = statement instanceof SetOperationList;
         PlainSelect select = statement instanceof Select root ? first(root) : null;
         if (select == null) return ResultMetadataPlan.none();
@@ -56,6 +66,13 @@ public final class ResultMetadataPlanner {
                             : setOperation && function(expression, "DECODE")
                                     ? ExpressionMetadata.number(-127)
                                     : oracleType(expression);
+            if (expression instanceof Subtraction subtraction
+                    && DatabaseTypeCoercionRule.expressionKind(
+                                    subtraction.getLeftExpression(), select, resolver)
+                            == ColumnTypeResolver.Kind.DATE
+                    && DatabaseTypeCoercionRule.expressionKind(
+                                    subtraction.getRightExpression(), select, resolver)
+                            == ColumnTypeResolver.Kind.DATE) type = ExpressionMetadata.number(0);
             columns.add(
                     new Column(
                             label(item, sourceLabels, columns.size()),

@@ -12,6 +12,9 @@ import java.util.Set;
 /** One-pass ordinary-SQL lexical normalization and feature gate. */
 public final class SqlGate {
     private static final String[] ORACLE_FUNCTIONS = {
+        "LENGTH",
+        "NULLIF",
+        "COALESCE",
         "NVL",
         "NVL2",
         "CONCAT",
@@ -129,7 +132,8 @@ public final class SqlGate {
     }
 
     private static boolean requiresStructuralParser(String masked) {
-        return word(masked, "IN")
+        return masked.indexOf('/') >= 0
+                || word(masked, "IN")
                 || word(masked, "OFFSET")
                 || wordSequence(masked, "ALTER", "SEQUENCE")
                 || qualifiedUpdateTarget(masked)
@@ -141,7 +145,7 @@ public final class SqlGate {
 
     private static boolean requiresDatabaseCoercion(String masked) {
         for (int i = 0; i < masked.length(); i++)
-            if ("=<>+".indexOf(masked.charAt(i)) >= 0) return true;
+            if ("=<>+-".indexOf(masked.charAt(i)) >= 0) return true;
         return word(masked, "INSERT")
                 || word(masked, "UPDATE")
                 || word(masked, "UNION")

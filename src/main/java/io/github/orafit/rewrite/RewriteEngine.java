@@ -2,6 +2,7 @@ package io.github.orafit.rewrite;
 
 import io.github.orafit.parse.ParserAdapter;
 import io.github.orafit.rewrite.hierarchy.HierarchyLoweringRule;
+import io.github.orafit.translation.ColumnTypeResolver;
 import io.github.orafit.translation.Feature;
 import io.github.orafit.translation.TranslationException;
 
@@ -80,6 +81,11 @@ public final class RewriteEngine {
      * @throws TranslationException when a recognized form cannot be lowered safely
      */
     public Result rewrite(Statement statement) throws TranslationException {
+        return rewrite(statement, ColumnTypeResolver.NONE);
+    }
+
+    public Result rewrite(Statement statement, ColumnTypeResolver resolver)
+            throws TranslationException {
         validateInListLimit(statement);
         SequenceRestartRule.Result sequenceResult = sequenceRestart.rewrite(statement);
         boolean changed = rewriteUnique(statement);
@@ -88,7 +94,7 @@ public final class RewriteEngine {
         changed |= normalizeDerivedAliases(statement);
         changed |= normalizeDuplicateJoinAliases(statement);
         changed |= normalizeSingleRowAggregateOrder(statement);
-        changed |= scalar.rewrite(statement);
+        changed |= scalar.rewrite(statement, resolver);
         changed |= functions.rewrite(statement);
         changed |= normalizeRowLimiting(statement);
         changed |= normalizeUpdateTarget(statement);

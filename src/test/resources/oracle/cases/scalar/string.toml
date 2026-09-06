@@ -625,3 +625,91 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "p1.length-fixed-char"
+title = "LENGTH retains fixed CHAR padding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LENGTH(CAST('A' AS CHAR(3))) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-varchar-equality"
+title = "char varchar equality"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN CAST('A' AS CHAR(3)) = CAST('A' AS VARCHAR2(3)) THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-length-unicode"
+title = "P1 boundary: char-length-unicode"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LENGTH(CAST('日' AS CHAR(9))) AS a, LENGTH(CAST('A ' AS CHAR(4))) AS b, LENGTH(CAST(NULL AS CHAR(4))) AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-comparison"
+title = "P1 boundary: char-comparison"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN CAST('A' AS CHAR(3)) = CAST('A  ' AS VARCHAR2(3)) THEN 1 ELSE 0 END AS a, CASE WHEN CAST('A' AS CHAR(3)) = 'A' THEN 1 ELSE 0 END AS b, CASE WHEN CAST('A' AS VARCHAR2(3)) = CAST('A' AS CHAR(3)) THEN 1 ELSE 0 END AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-derived"
+title = "P1 boundary: char-derived"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LENGTH(c) AS value FROM (SELECT CAST('A' AS CHAR(3)) AS c FROM dual)
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-columns"
+title = "CHAR column length and non-padded VARCHAR2 comparison"
+kind = "query"
+compare = "ordered"
+sql = "SELECT id, LENGTH(fixed_value) AS width, CASE WHEN fixed_value = variable_value THEN 1 ELSE 0 END AS value FROM bs_byte_length ORDER BY id"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

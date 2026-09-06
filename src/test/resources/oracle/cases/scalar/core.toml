@@ -354,3 +354,198 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "p1.nullif-type-check"
+title = "NULLIF enforces argument datatypes"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF(1, '1') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.coalesce-mixed-types"
+title = "coalesce mixed types"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE('1', 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.nullif-reverse"
+title = "P1 boundary: nullif-reverse"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF('1',1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.coalesce-reverse"
+title = "P1 boundary: coalesce-reverse"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE(1,'1') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.nullif-column"
+title = "P1 boundary: nullif-column"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF(sal,ename) AS value FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.coalesce-column"
+title = "P1 boundary: coalesce-column"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE(sal,ename) AS value FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.coalesce-typed"
+title = "P1 boundary: coalesce-typed"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COALESCE(CAST(NULL AS NUMBER),2) AS a, COALESCE(NULL,'x') AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.nullif-bind-untyped"
+title = "NULLIF bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT NULLIF(?, 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "FUNCTION_BIND_TYPE"
+reason = "Untyped binds require CAST so Oracle datatype validation is known before execution"
+
+[[case]]
+id = "p1.nullif-bind-typed"
+title = "NULLIF bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT NULLIF(CAST(? AS NUMBER), 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.coalesce-bind-untyped"
+title = "COALESCE bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT COALESCE(?, 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "FUNCTION_BIND_TYPE"
+reason = "Untyped binds require CAST so Oracle datatype validation is known before execution"
+
+[[case]]
+id = "p1.coalesce-bind-typed"
+title = "COALESCE bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT COALESCE(CAST(? AS NUMBER), 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

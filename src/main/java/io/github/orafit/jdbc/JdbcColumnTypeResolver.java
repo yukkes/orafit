@@ -25,7 +25,7 @@ final class JdbcColumnTypeResolver implements ColumnTypeResolver {
     public Kind resolve(String schema, String table, String column) throws TranslationException {
         if (table == null || column == null) return Kind.UNKNOWN;
         try {
-            String effectiveSchema = schema == null ? connection.getSchema() : schema;
+            String effectiveSchema = schema == null ? visibleSchema(table) : schema;
             String key = (effectiveSchema + "." + table).toLowerCase(Locale.ROOT);
             Map<String, Kind> columns = tables.get(key);
             if (columns == null) {
@@ -37,6 +37,21 @@ final class JdbcColumnTypeResolver implements ColumnTypeResolver {
             throw new TranslationException(
                     "COLUMN_METADATA", "Could not resolve " + table + "." + column, failure);
         }
+    }
+
+    private String visibleSchema(String table) throws SQLException {
+        if (connection.getMetaData() == null) return connection.getSchema();
+        // Resolve the relation through PostgreSQL's search_path, including temporary
+        // schemas, rather than assuming current_schema contains every visible table.
+        try (var statement =
+                connection.prepareStatement(
+                        "SELECT n.nspname FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE c.oid = pg_catalog.to_regclass(?)")) {
+            statement.setString(1, "\"" + table.replace("\"", "\"\"") + "\"");
+            try (ResultSet rows = statement.executeQuery()) {
+                if (rows != null && rows.next()) return rows.getString(1);
+            }
+        }
+        return connection.getSchema();
     }
 
     private Map<String, Kind> load(String schema, String table) throws SQLException {

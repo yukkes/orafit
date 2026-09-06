@@ -801,3 +801,121 @@ error_code = 1722
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "p1.number-division"
+title = "NUMBER division precision"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 / 3 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-decimal"
+title = "division decimal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1.0 / 7 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-magnitudes"
+title = "P1 boundary: division-magnitudes"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 10/3 AS a, 100/3 AS b, 1/300 AS c, -1/7 AS d, 22/7 AS e, 1/8 AS f FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-columns"
+title = "P1 boundary: division-columns"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, sal / 7 AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-nested"
+title = "P1 boundary: division-nested"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT (1/3)/7 AS a, 1/(7/3) AS b, 0/3 AS c, CAST(NULL AS NUMBER)/3 AS d FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-zero"
+title = "P1 boundary: division-zero"
+kind = "query"
+compare = "error"
+sql = """
+SELECT 1/0 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-bind"
+title = "P1 boundary: division-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ? / ? AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1"
+
+[[case.bind]]
+mode = "in"
+index = 2
+type = "DECIMAL"
+value = "7"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

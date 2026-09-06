@@ -15,7 +15,13 @@ final class JdbcErrors {
             case "COALESCE_ARITY" ->
                     new SQLException(
                             "ORA-00938: not enough arguments for function", "42000", 938, failure);
-            case "NULLIF_FIRST_NULL" ->
+            case "SET_DATATYPE" ->
+                    new SQLException(
+                            "ORA-01790: expression must have same datatype as corresponding expression",
+                            "42000",
+                            1790,
+                            failure);
+            case "FUNCTION_DATATYPE", "NULLIF_FIRST_NULL" ->
                     new SQLException("ORA-00932: inconsistent datatypes", "42000", 932, failure);
             case "MERGE_ON_COLUMN_UPDATE" ->
                     new SQLException(
