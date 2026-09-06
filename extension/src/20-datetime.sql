@@ -35,15 +35,32 @@ BEGIN
         pg_format := regexp_replace(pg_format, '[^[:alnum:]]', '', 'g');
     END IF;
     IF upper(format) IN ('YYYY-MM-DD', 'FXYYYY-MM-DD') THEN
-        calendar_parts := regexp_match(btrim(value), '^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})$');
-        IF calendar_parts IS NOT NULL AND calendar_parts[1]::integer > 0
-           AND calendar_parts[2]::integer BETWEEN 1 AND 12
-           AND calendar_parts[3]::integer BETWEEN 1 AND 31 THEN
-            BEGIN
-                calendar_date := make_date(calendar_parts[1]::integer, calendar_parts[2]::integer, calendar_parts[3]::integer);
-            EXCEPTION WHEN datetime_field_overflow THEN
-                RAISE EXCEPTION 'ORA-01839: date not valid for month specified' USING ERRCODE = 'P1839';
-            END;
+        calendar_parts := regexp_match(btrim(value), '^([0-9]{1,4})-([0-9]{1,2})-([0-9]{1,2})(.*)$');
+        IF calendar_parts IS NULL AND upper(left(format, 2)) <> 'FX'
+           AND btrim(value) ~ '^0000[0-9]{4}$' THEN
+            -- Oracle's separator-omission fallback reports a format mismatch
+            -- for compact input with a zero year, rather than ORA-01841.
+            RAISE EXCEPTION 'ORA-01861: literal does not match format string' USING ERRCODE = '22008';
+        END IF;
+        IF calendar_parts IS NOT NULL THEN
+            -- Field ranges precede the year-zero check in Oracle. Calendar
+            -- validity follows it; trailing input is checked below.
+            IF calendar_parts[2]::integer NOT BETWEEN 1 AND 12 THEN
+                RAISE EXCEPTION 'ORA-01843: not a valid month' USING ERRCODE = 'P1843';
+            END IF;
+            IF calendar_parts[3]::integer NOT BETWEEN 1 AND 31 THEN
+                RAISE EXCEPTION 'ORA-01847: day of month must be between 1 and last day of month' USING ERRCODE = 'P1847';
+            END IF;
+            IF calendar_parts[1]::integer = 0 THEN
+                RAISE EXCEPTION 'ORA-01841: year must not be zero' USING ERRCODE = 'P1841';
+            END IF;
+            IF coalesce(calendar_parts[4], '') = '' THEN
+                BEGIN
+                    calendar_date := make_date(calendar_parts[1]::integer, calendar_parts[2]::integer, calendar_parts[3]::integer);
+                EXCEPTION WHEN datetime_field_overflow THEN
+                    RAISE EXCEPTION 'ORA-01839: date not valid for month specified' USING ERRCODE = 'P1839';
+                END;
+            END IF;
         END IF;
     END IF;
     parsed := pg_catalog.to_timestamp(btrim(value), pg_format)::timestamp without time zone;
@@ -79,6 +96,12 @@ BEGIN
     END IF;
     RETURN parsed;
 EXCEPTION
+    WHEN SQLSTATE 'P1841' THEN
+        RAISE EXCEPTION 'ORA-01841: year must not be zero' USING ERRCODE = '22008';
+    WHEN SQLSTATE 'P1843' THEN
+        RAISE EXCEPTION 'ORA-01843: not a valid month' USING ERRCODE = '22008';
+    WHEN SQLSTATE 'P1847' THEN
+        RAISE EXCEPTION 'ORA-01847: day of month must be between 1 and last day of month' USING ERRCODE = '22008';
     WHEN SQLSTATE 'P1839' THEN
         RAISE EXCEPTION 'ORA-01839: date not valid for month specified' USING ERRCODE = '22008';
     WHEN SQLSTATE 'P1830' THEN

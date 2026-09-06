@@ -597,3 +597,187 @@ mode = "reject"
 stage = "translation"
 code = "SET_CHAR_WIDTH"
 reason = "Physical CHAR set widths need explicit casts on every branch; no padding approximation"
+
+[[case]]
+# Observed 実行結果: Oracle ORA-02287; Orafit 成功.
+id = "main-gap.sequence-in-where"
+title = "NEXTVAL is forbidden in a WHERE clause"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE bs_seq.NEXTVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-currval"
+title = "P3 validation: sequence-where-currval"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE bs_seq.CURRVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-case"
+title = "P3 validation: sequence-where-case"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE Bs_Seq.NeXtVaL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-quoted"
+title = "P3 validation: sequence-where-quoted"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE "BS_SEQ"."NEXTVAL" > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-inline"
+title = "P3 validation: sequence-where-inline"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM (SELECT empno FROM bs_emp WHERE bs_seq.NEXTVAL > 0) q
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-exists"
+title = "P3 validation: sequence-where-exists"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE EXISTS (SELECT 1 FROM dual WHERE bs_seq.NEXTVAL > 0)
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-cte"
+title = "P3 validation: sequence-where-cte"
+kind = "query"
+compare = "error"
+sql = """
+WITH q AS (SELECT empno FROM bs_emp WHERE bs_seq.NEXTVAL > 0) SELECT empno FROM q
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-repeated"
+title = "P3 validation: sequence-where-repeated"
+kind = "query"
+compare = "error"
+sql = """
+SELECT bs_seq.NEXTVAL AS a, bs_seq.NEXTVAL AS b FROM dual WHERE bs_seq.NEXTVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-unreachable"
+title = "P3 validation: sequence-where-unreachable"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE 1=0 AND bs_seq.NEXTVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-named-column"
+title = "P3 validation: sequence-named-column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 AS value FROM (SELECT 1 AS "NEXTVAL" FROM dual) q WHERE "NEXTVAL" = 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.sequence-qualified-column"
+title = "P3 validation: sequence-qualified-column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 AS value FROM (SELECT 1 AS "NEXTVAL" FROM dual) q WHERE q."NEXTVAL" = 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

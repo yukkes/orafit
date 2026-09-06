@@ -1,6 +1,7 @@
 package io.github.orafit.rewrite;
 
 import io.github.orafit.parse.ParserAdapter;
+import io.github.orafit.translation.ColumnTypeResolver;
 import io.github.orafit.translation.TranslationException;
 
 import net.sf.jsqlparser.expression.Alias;
@@ -22,7 +23,18 @@ import java.util.Map;
 
 /** A volatile inner projection evaluates each sequence once per qualifying row. */
 final class SequenceProjectionRule {
-    boolean rewrite(Statement statement) throws TranslationException {
+    static void validateWhere(Statement statement, ColumnTypeResolver resolver)
+            throws TranslationException {
+        for (PlainSelect select : SelectTrees.plain(statement)) {
+            for (Column column : ParserAdapter.columns(select.getWhere())) {
+                if (sequenceReference(column, select, resolver))
+                    throw new TranslationException(
+                            "SEQUENCE_WHERE", "ORA-02287: sequence number not allowed here");
+            }
+        }
+    }
+
+    boolean rewrite(Statement statement, ColumnTypeResolver resolver) throws TranslationException {
         boolean changed = false;
         for (PlainSelect select : SelectTrees.plain(statement)) {
             List<Column> columns = new ArrayList<>();
@@ -30,7 +42,7 @@ final class SequenceProjectionRule {
                 columns.addAll(ParserAdapter.columns(item.getExpression()));
             Map<String, List<Column>> sequences = new LinkedHashMap<>();
             for (Column column : columns) {
-                if (sequence(column))
+                if (sequenceReference(column, select, resolver))
                     sequences
                             .computeIfAbsent(sequenceKey(column), key -> new ArrayList<>())
                             .add(column);
@@ -73,10 +85,7 @@ final class SequenceProjectionRule {
                                                     || !ParserAdapter.nodes(
                                                                     item.getExpression(),
                                                                     Select.class)
-                                                            .isEmpty())
-                    || (select.getWhere() != null
-                            && ParserAdapter.columns(select.getWhere()).stream()
-                                    .anyMatch(SequenceProjectionRule::sequence))) {
+                                                            .isEmpty())) {
                 throw new TranslationException(
                         "SEQUENCE_PROJECTION",
                         "Repeated sequence references require an ordinary SELECT projection without aggregation or row limiting");
@@ -134,7 +143,15 @@ final class SequenceProjectionRule {
         return "NEXTVAL".equalsIgnoreCase(column.getUnquotedColumnName());
     }
 
-    private static boolean sequence(Column column) {
+    static boolean sequenceReference(Column column, PlainSelect select, ColumnTypeResolver resolver)
+            throws TranslationException {
+        return sequence(column)
+                && (select == null
+                        || DatabaseTypeCoercionRule.expressionKind(column, select, resolver)
+                                == ColumnTypeResolver.Kind.UNKNOWN);
+    }
+
+    static boolean sequence(Column column) {
         return column.getTable() != null
                 && column.getTableName() != null
                 && List.of("NEXTVAL", "CURRVAL")

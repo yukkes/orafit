@@ -258,6 +258,9 @@ final class ScalarLoweringRule {
                     : new OracleNamedFunctionParameter(named.getName(), lowered);
         }
         if (expression instanceof Column column) {
+            if (SequenceProjectionRule.sequence(column)
+                    && !SequenceProjectionRule.sequenceReference(
+                            column, change.select, change.resolver)) return column;
             if (change.dml
                     && column.getTable() != null
                     && "NEXTVAL".equalsIgnoreCase(column.getUnquotedColumnName())

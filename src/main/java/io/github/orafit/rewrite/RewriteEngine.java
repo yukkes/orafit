@@ -86,6 +86,7 @@ public final class RewriteEngine {
 
     public Result rewrite(Statement statement, ColumnTypeResolver resolver)
             throws TranslationException {
+        SequenceProjectionRule.validateWhere(statement, resolver);
         validateInListLimit(statement);
         SequenceRestartRule.Result sequenceResult = sequenceRestart.rewrite(statement);
         boolean changed = rewriteUnique(statement);
@@ -94,7 +95,7 @@ public final class RewriteEngine {
         changed |= normalizeDerivedAliases(statement);
         changed |= normalizeDuplicateJoinAliases(statement);
         changed |= normalizeSingleRowAggregateOrder(statement);
-        changed |= new SequenceProjectionRule().rewrite(statement);
+        changed |= new SequenceProjectionRule().rewrite(statement, resolver);
         changed |= scalar.rewrite(statement, resolver);
         changed |= functions.rewrite(statement);
         changed |= normalizeRowLimiting(statement);

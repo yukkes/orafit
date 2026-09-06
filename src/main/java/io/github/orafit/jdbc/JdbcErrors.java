@@ -12,6 +12,7 @@ final class JdbcErrors {
 
     static SQLException fromTranslation(TranslationException failure) {
         return switch (failure.code()) {
+            case "SEQUENCE_WHERE" -> new SQLException(failure.getMessage(), "42000", 2287, failure);
             case "EXTRACT_FIELD" -> new SQLException(failure.getMessage(), "99999", 30076, failure);
             case "COALESCE_ARITY" ->
                     new SQLException(
