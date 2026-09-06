@@ -19,6 +19,7 @@ BEGIN
     -- Oracle NUMBER stores a value, not a declared column scale. Its default character
     -- conversion therefore omits insignificant fractional zeros, unlike PostgreSQL numeric.
     result := pg_catalog.trim_scale(value)::text;
+    result := regexp_replace(result, '^(-?)0[.]', '\1.');
     IF decimal_character <> '.' THEN result := replace(result, '.', decimal_character); END IF;
     RETURN result;
 END
@@ -103,6 +104,14 @@ CREATE FUNCTION orafit.concat_varchar2(left_value text, right_value text)
 RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE
 AS $$ SELECT NULLIF(COALESCE($1, '') || COALESCE($2, ''), '') $$;
+
+CREATE FUNCTION orafit.replace(value text, search text, replacement text DEFAULT NULL)
+RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$ SELECT NULLIF(pg_catalog.replace($1, COALESCE($2, ''), COALESCE($3, '')), '') $$;
+
+CREATE FUNCTION orafit.translate(value text, source text, target text)
+RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$ SELECT NULLIF(pg_catalog.translate(NULLIF($1, ''), NULLIF($2, ''), NULLIF($3, '')), '') $$;
 
 CREATE FUNCTION orafit.substr(value text, start_position numeric)
 RETURNS text
@@ -346,3 +355,34 @@ CREATE FUNCTION orafit.rtrim(value text)
 RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE
 AS $$ SELECT NULLIF(pg_catalog.rtrim(NULLIF($1, ''), ' '), '') $$;
+-- Casting bpchar to text discards trailing blanks in PostgreSQL. Recover only
+-- those padding bytes; all non-padding characters retain their original width.
+CREATE FUNCTION orafit.char_text(value bpchar)
+RETURNS text LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT rpad($1::text, char_length($1::text) + octet_length($1) - octet_length($1::text), ' ') $$;
+
+CREATE FUNCTION orafit.length(value bpchar)
+RETURNS numeric LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT char_length(orafit.char_text($1))::numeric $$;
+
+CREATE FUNCTION orafit.cast_char(value text, width integer, byte_semantics boolean)
+RETURNS bpchar LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+DECLARE padding integer;
+BEGIN
+    IF value = '' THEN RETURN NULL; END IF;
+    padding := width - CASE WHEN byte_semantics THEN octet_length(value) ELSE char_length(value) END;
+    IF padding < 0 THEN
+        RAISE EXCEPTION 'Orafit: overlength CHAR cast is unsupported' USING ERRCODE = '0A000';
+    END IF;
+    RETURN (value || repeat(' ', padding))::bpchar;
+END
+$$;
+
+CREATE FUNCTION orafit.length(value text)
+RETURNS numeric LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT char_length(NULLIF($1, ''))::numeric $$;
+
+CREATE FUNCTION orafit.length(value numeric)
+RETURNS numeric LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$ SELECT char_length(orafit._number_to_varchar2($1, '.,'))::numeric $$;

@@ -5,8 +5,15 @@ import io.github.orafit.translation.Translation;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.sql.*;
-import java.util.*;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /** Metadata-backed procedure adapter for IN, OUT, and INOUT parameters. */
 final class ProcedureRuntime {

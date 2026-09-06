@@ -84,12 +84,14 @@ public final class OrafitEngine {
                         : List.of(parser.parse(callResult.sql()));
         boolean script = scan.script();
         ResultMetadataPlan metadataPlan =
-                script ? ResultMetadataPlan.none() : metadata.plan(statements.get(0), input);
+                script
+                        ? ResultMetadataPlan.none()
+                        : metadata.plan(statements.get(0), input, columnTypes);
         List<String> renderedStatements = new ArrayList<>(statements.size());
         boolean rewriteChanged = false;
         boolean databaseChanged = false;
         for (Statement statement : statements) {
-            RewriteEngine.Result result = rewriter.rewrite(statement);
+            RewriteEngine.Result result = rewriter.rewrite(statement, columnTypes);
             rewriteChanged |= result.changed();
             databaseChanged |=
                     !scan.features().contains(Feature.CONNECT_BY)

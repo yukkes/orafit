@@ -2,8 +2,16 @@ package io.github.orafit.jdbc;
 
 import io.github.orafit.translation.CallPlan;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Resolves one PostgreSQL procedure signature without caching or Oracle-side type inference. */
 final class RoutineMetadataResolver {

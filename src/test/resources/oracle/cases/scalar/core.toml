@@ -290,3 +290,363 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "core.coalesce-single-argument"
+title = "COALESCE rejects a single argument with ORA-00938"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE(1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 938
+
+[case.orafit]
+mode = "same"
+code = "COALESCE_ARITY"
+
+[[case]]
+id = "core.nullif-null-first"
+title = "NULLIF rejects an untyped NULL first argument"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF(NULL,1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "NULLIF_FIRST_NULL"
+
+[[case]]
+id = "core.coalesce-valid"
+title = "COALESCE valid argument lists keep short circuit behavior"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COALESCE(1, 1 / 0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "core.nullif-typed-null"
+title = "NULLIF accepts a typed NULL first argument"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NULLIF(CAST(NULL AS NUMBER), 1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.nullif-type-check"
+title = "NULLIF enforces argument datatypes"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF(1, '1') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.coalesce-mixed-types"
+title = "coalesce mixed types"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE('1', 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.nullif-reverse"
+title = "P1 boundary: nullif-reverse"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF('1',1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.coalesce-reverse"
+title = "P1 boundary: coalesce-reverse"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE(1,'1') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+code = "FUNCTION_DATATYPE"
+
+[[case]]
+id = "p1.nullif-column"
+title = "P1 boundary: nullif-column"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NULLIF(sal,ename) AS value FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.coalesce-column"
+title = "P1 boundary: coalesce-column"
+kind = "query"
+compare = "error"
+sql = """
+SELECT COALESCE(sal,ename) AS value FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 932
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.coalesce-typed"
+title = "P1 boundary: coalesce-typed"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT COALESCE(CAST(NULL AS NUMBER),2) AS a, COALESCE(NULL,'x') AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.nullif-bind-untyped"
+title = "NULLIF bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT NULLIF(?, 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "FUNCTION_BIND_TYPE"
+reason = "Untyped binds require CAST so Oracle datatype validation is known before execution"
+
+[[case]]
+id = "p1.nullif-bind-typed"
+title = "NULLIF bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT NULLIF(CAST(? AS NUMBER), 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.coalesce-bind-untyped"
+title = "COALESCE bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT COALESCE(?, 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+code = "FUNCTION_BIND_TYPE"
+reason = "Untyped binds require CAST so Oracle datatype validation is known before execution"
+
+[[case]]
+id = "p1.coalesce-bind-typed"
+title = "COALESCE bind datatype contract"
+kind = "query"
+compare = "ordered"
+sql = "SELECT COALESCE(CAST(? AS NUMBER), 1) AS value FROM dual"
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "2"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed vendor error code: Oracle 1476; Orafit 0.
+id = "main-gap.nvl-eager-error"
+title = "NVL division-by-zero vendor error code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NVL(1, 1 / 0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.nvl-eager-column"
+title = "P2 boundary: nvl-eager-column"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NVL(empno, 1 / (empno-empno)) AS value FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.nvl-eager-bind"
+title = "P2 boundary: nvl-eager-bind"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NVL(?, 1/?) AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1"
+
+[[case.bind]]
+mode = "in"
+index = 2
+type = "DECIMAL"
+value = "0"
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed rows: Oracle [[0]]; Orafit [[null]].
+id = "p2.reject-stddev-single-row"
+title = "STDDEV of one row returns zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT STDDEV(1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "STDDEV_PRECISION"
+reason = "Deferred: exact Oracle semantics require a separate design; see incompatibility-decisions.md"
+
+
+
+[[case]]
+id = "p2.reject-stddev-window"
+title = "P2 boundary: stddev-window"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, STDDEV(sal) OVER (ORDER BY empno ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "STDDEV_PRECISION"
+reason = "Deferred: exact Oracle semantics require a separate design; see incompatibility-decisions.md"

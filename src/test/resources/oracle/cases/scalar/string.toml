@@ -253,3 +253,495 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "string.replace-omitted-replacement"
+title = "REPLACE accepts an omitted replacement argument"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN REPLACE('a', 'a') IS NULL THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-small-decimal"
+title = "TO_CHAR default numeric format omits the leading zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(0.1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.translate-delete-all"
+title = "TRANSLATE deletion of every character produces NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN TRANSLATE('a', 'xa', 'x') IS NULL THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-format-overflow"
+title = "TO_CHAR fills the entire numeric overflow field"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(12345, '999') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-format-negative-zero"
+title = "TO_CHAR retains a negative sign when rounding to zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(-0.01, '9') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.replace-null-search"
+title = "REPLACE returns the source when the search string is NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REPLACE('abc', NULL, 'x') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.replace-null-replacement"
+title = "REPLACE deletes matches when the replacement is NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REPLACE('aba', 'a', NULL) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.upper-number"
+title = "UPPER accepts a numeric argument"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT UPPER(123) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.rpad-fractional-length"
+title = "RPAD fractional length result JDBC precision"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT RPAD('a',3.9,'x') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.replace-expansion"
+title = "REPLACE expands literal strings and preserves precision"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REPLACE('abc', 'b', 'XX') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.replace-omitted-delete"
+title = "REPLACE omitted replacement deletes every occurrence"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REPLACE('aba','a') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.replace-empty-result"
+title = "REPLACE full deletion returns a NULL value"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REPLACE('a','a') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.replace-unicode"
+title = "REPLACE preserves Unicode values and metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REPLACE('日本語','本','X') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.replace-bound-values"
+title = "REPLACE preserves bind order and evaluates replacements"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN REPLACE(?, ?, ?) = 'aXXc' THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "abc"
+
+[[case.bind]]
+index = 2
+type = "VARCHAR"
+mode = "in"
+value = "b"
+
+[[case.bind]]
+index = 3
+type = "VARCHAR"
+mode = "in"
+value = "XX"
+
+[[case]]
+id = "string.translate-mapping"
+title = "TRANSLATE preserves first mappings, deletion and NULL propagation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN TRANSLATE('abca','aabc','XYZ') = 'XZX'
+ AND TRANSLATE('abc', 'xa', 'x') = 'bc'
+ AND TRANSLATE('abc', 'a', '') IS NULL
+ AND TRANSLATE(NULL, 'a', 'b') IS NULL THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-small-negative"
+title = "TO_CHAR negative fractional NUMBER omits the leading zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(-0.1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-fraction-contexts"
+title = "Default numeric character conversion composes with string operations"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN 'x' || 0.1 = 'x.1' AND TO_CHAR(0) = '0'
+ AND TO_CHAR(1.25) = '1.25' AND TO_CHAR(-1.25) = '-1.25' THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-format-signs"
+title = "Numeric TO_CHAR handles signs at several widths"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(-0.01, '999') AS rounded_negative,
+       TO_CHAR(-0.01, '000') AS padded_negative,
+       TO_CHAR(-12, '999') AS negative_value,
+       TO_CHAR(12, '999') AS positive_value
+FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-format-fraction-zero"
+title = "Numeric TO_CHAR keeps negative signs when rounding fractions to zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(-0.01, '999.9') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.to-char-format-negative-overflow"
+title = "Numeric TO_CHAR fills every overflow position with a pound sign"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_CHAR(-12345, '999') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.upper-coercion"
+title = "UPPER keeps text conversion, empty strings and NULL behavior"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN UPPER(123) = '123' AND UPPER('Abc') = 'ABC'
+ AND UPPER('') IS NULL AND UPPER(NULL) IS NULL THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.rpad-fractional-negative"
+title = "Negative fractional padding length truncates and produces NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT RPAD('a', -1.9, 'x') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "string.lpad-fractional-length"
+title = "LPAD and RPAD share fractional literal metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LPAD('a', 3.9, 'x') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.length-fixed-char"
+title = "LENGTH retains fixed CHAR padding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LENGTH(CAST('A' AS CHAR(3))) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-varchar-equality"
+title = "char varchar equality"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN CAST('A' AS CHAR(3)) = CAST('A' AS VARCHAR2(3)) THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-length-unicode"
+title = "P1 boundary: char-length-unicode"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LENGTH(CAST('日' AS CHAR(9))) AS a, LENGTH(CAST('A ' AS CHAR(4))) AS b, LENGTH(CAST(NULL AS CHAR(4))) AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-comparison"
+title = "P1 boundary: char-comparison"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN CAST('A' AS CHAR(3)) = CAST('A  ' AS VARCHAR2(3)) THEN 1 ELSE 0 END AS a, CASE WHEN CAST('A' AS CHAR(3)) = 'A' THEN 1 ELSE 0 END AS b, CASE WHEN CAST('A' AS VARCHAR2(3)) = CAST('A' AS CHAR(3)) THEN 1 ELSE 0 END AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-derived"
+title = "P1 boundary: char-derived"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT LENGTH(c) AS value FROM (SELECT CAST('A' AS CHAR(3)) AS c FROM dual)
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.char-columns"
+title = "CHAR column length and non-padded VARCHAR2 comparison"
+kind = "query"
+compare = "ordered"
+sql = "SELECT id, LENGTH(fixed_value) AS width, CASE WHEN fixed_value = variable_value THEN 1 ELSE 0 END AS value FROM bs_byte_length ORDER BY id"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.cast-varchar-overlength"
+title = "CAST to VARCHAR2 shorter than the input"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('abcd' AS VARCHAR2(2)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.varchar-truncation"
+title = "P2 boundary: varchar-truncation"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('abcd' AS VARCHAR2(2)) AS a, CAST('ab  ' AS VARCHAR2(2)) AS b, CAST(NULL AS VARCHAR2(2)) AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

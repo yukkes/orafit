@@ -8,7 +8,14 @@ import io.github.orafit.translation.ResultMetadataPlan.Source;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.List;
 
 /** Database-free checks for runtime Oracle metadata overlays. */

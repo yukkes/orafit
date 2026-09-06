@@ -24,6 +24,7 @@ import net.sf.jsqlparser.expression.operators.arithmetic.Division;
 import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
 import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 
@@ -45,6 +46,9 @@ final class ExpressionMetadata {
         if (expression instanceof CastExpression cast && cast.getColDataType() != null) {
             String name =
                     cast.getColDataType().getDataType().stripLeading().toUpperCase(Locale.ROOT);
+            if (name.equals("NUMBER")
+                    && cast.getColDataType().toString().equalsIgnoreCase("NUMBER"))
+                return number(-127);
             if (name.startsWith("NUMBER")) return meta(Kind.NUMBER, null, null);
             if (name.startsWith("DATE")) return meta(Kind.DATE, 7, 0);
             if (name.startsWith("TIMESTAMP")) return meta(Kind.TIMESTAMP, 0, 9);
@@ -56,7 +60,23 @@ final class ExpressionMetadata {
             return meta(Kind.VARCHAR2, 4000, 0);
         if (expression instanceof Concat concat) return concat(concat);
         if (expression instanceof CaseExpression value && numericCase(value)) return number(-127);
+        if (expression instanceof Subtraction subtraction
+                && type(subtraction.getLeftExpression()).kind() == Kind.DATE
+                && type(subtraction.getRightExpression()).kind() == Kind.DATE) return number(0);
         if (dateAddition(expression)) return meta(Kind.DATE, 7, 0);
+        if (expression instanceof Division) return number(literalArithmetic(expression) ? -127 : 0);
+        if ((expression instanceof Addition
+                        || expression instanceof Subtraction
+                        || expression instanceof Multiplication)
+                && !io.github.orafit.parse.ParserAdapter.columns(expression).isEmpty()
+                && io.github.orafit.parse.ParserAdapter.columns(expression).stream()
+                        .anyMatch(
+                                c ->
+                                        List.of("NEXTVAL", "CURRVAL")
+                                                .contains(
+                                                        c.getUnquotedColumnName()
+                                                                .toUpperCase(Locale.ROOT))))
+            return number(0);
         if (expression instanceof Addition
                 || expression instanceof Subtraction
                 || expression instanceof Multiplication
@@ -94,8 +114,45 @@ final class ExpressionMetadata {
         if (!(expression instanceof Function function) || function.getName() == null) return auto();
 
         String name = function.getName().toUpperCase(Locale.ROOT);
-        if (List.of("TO_DATE", "LAST_DAY", "ADD_MONTHS").contains(name))
+        if (name.equals("ORAFIT.CAST_CHAR")
+                && function.getParameters() != null
+                && function.getParameters().size() == 3
+                && function.getParameters().get(1) instanceof LongValue width)
+            return meta(Kind.CHAR, (int) width.getValue(), 0);
+        if ((name.equals("MOD") || name.equals("CEIL"))
+                && function.getParameters() != null
+                && function.getParameters().stream()
+                        .map(v -> v instanceof SignedExpression signed ? signed.getExpression() : v)
+                        .allMatch(
+                                v ->
+                                        v instanceof LongValue
+                                                || v instanceof DoubleValue
+                                                || v instanceof StringValue)) return number(-127);
+        if (List.of("SQRT", "REMAINDER").contains(name))
+            return number(
+                    function.getParameters() != null
+                                    && function.getParameters().stream()
+                                            .allMatch(ExpressionMetadata::literalArithmetic)
+                            ? -127
+                            : 0);
+        if (List.of("TO_DATE", "LAST_DAY", "ADD_MONTHS", "NEXT_DAY").contains(name))
             return meta(Kind.DATE, 7, 0);
+        if (name.equals("COALESCE") && function.getParameters() != null) {
+            Column result = null;
+            for (Expression argument : function.getParameters()) {
+                if (argument instanceof NullValue) continue;
+                Column current = type(argument);
+                if (current.kind() != Kind.CHAR) {
+                    result = null;
+                    break;
+                }
+                if (result == null
+                        || (current.precision() != null
+                                && result.precision() != null
+                                && current.precision() > result.precision())) result = current;
+            }
+            if (result != null) return result;
+        }
         if (name.equals("TO_TIMESTAMP")) return meta(Kind.TIMESTAMP, 0, 9);
         if (name.equals("LISTAGG") || name.equals("SYS_CONNECT_BY_PATH"))
             return meta(Kind.VARCHAR2, 4000, 0);
@@ -110,6 +167,9 @@ final class ExpressionMetadata {
                     : meta(Kind.VARCHAR2, null, 0);
         }
         if (name.equals("TO_CHAR")) return meta(Kind.VARCHAR2, toCharWidth(function), 0);
+        if (name.equals("REPLACE")) return meta(Kind.VARCHAR2, replaceWidth(function), 0);
+        if (name.equals("UPPER") && !(firstExpression(function) instanceof StringValue))
+            return meta(Kind.VARCHAR2, width(firstExpression(function)), 0);
         if (name.equals("NVL2")) return meta(Kind.VARCHAR2, nvl2Width(function), 0);
         if (name.equals("DECODE")) return decode(function);
         if (name.equals("NVL")) return meta(Kind.VARCHAR2, maxStringWidth(function), 0);
@@ -181,7 +241,35 @@ final class ExpressionMetadata {
                 function.getParameters() == null || function.getParameters().size() < 2
                         ? null
                         : integer(function.getParameters().get(1));
+        if (width == null
+                && function.getParameters() != null
+                && function.getParameters().size() >= 2) {
+            Expression length = function.getParameters().get(1);
+            Expression unsigned =
+                    length instanceof SignedExpression signed ? signed.getExpression() : length;
+            if (unsigned instanceof DoubleValue) {
+                try {
+                    width = new BigDecimal(length.toString()).toBigInteger().longValueExact();
+                } catch (ArithmeticException ignored) {
+                    return 4000;
+                }
+            }
+        }
         return width == null ? 4000 : Math.toIntExact(Math.max(0, width));
+    }
+
+    private static Integer replaceWidth(Function function) {
+        var args = function.getParameters();
+        if (args == null || args.size() < 2) return null;
+        if (oracleNull(args.get(0))) return 0;
+        String source = text(args.get(0));
+        if (source == null) return null;
+        if (oracleNull(args.get(1))) return source.length();
+        String search = text(args.get(1));
+        String replacement = args.size() < 3 || oracleNull(args.get(2)) ? "" : text(args.get(2));
+        return search == null || replacement == null
+                ? null
+                : source.replace(search, replacement).length();
     }
 
     private static Integer trimWidth(TrimFunction trim) {
@@ -217,6 +305,24 @@ final class ExpressionMetadata {
         if (expression instanceof StringValue value) return value.getValue();
         if (expression instanceof LongValue value) return Long.toString(value.getValue());
         return null;
+    }
+
+    private static boolean literalArithmetic(Expression expression) {
+        if (expression instanceof LongValue
+                || expression instanceof DoubleValue
+                || expression instanceof StringValue) return true;
+        if (expression instanceof SignedExpression signed)
+            return literalArithmetic(signed.getExpression());
+        if (expression
+                        instanceof
+                        net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList<
+                                        ?>
+                                list
+                && list.size() == 1) return literalArithmetic(list.get(0));
+        if (expression instanceof net.sf.jsqlparser.expression.BinaryExpression binary)
+            return literalArithmetic(binary.getLeftExpression())
+                    && literalArithmetic(binary.getRightExpression());
+        return false;
     }
 
     private static boolean dateAddition(Expression expression) {
@@ -412,8 +518,9 @@ final class ExpressionMetadata {
     private static Integer width(Expression value) {
         if (value instanceof NullValue) return 0;
         if (value instanceof StringValue string) return literalWidth(string);
-        if (value instanceof LongValue || value instanceof DoubleValue)
-            return value.toString().length();
+        if (value instanceof DoubleValue)
+            return value.toString().replaceFirst("^0[.]", ".").length();
+        if (value instanceof LongValue) return value.toString().length();
         if (value instanceof SignedExpression signed) {
             Integer number = width(signed.getExpression());
             return number == null ? null : number + 1;

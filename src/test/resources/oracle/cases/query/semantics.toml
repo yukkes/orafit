@@ -241,3 +241,543 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "p1.union-mixed-types"
+title = "UNION ALL rejects character and numeric datatype groups"
+kind = "query"
+compare = "error"
+sql = """
+SELECT 1 AS value FROM dual UNION ALL SELECT '1' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1790
+
+[case.orafit]
+mode = "same"
+code = "SET_DATATYPE"
+
+[[case]]
+# Observed rows: Oracle [[101, 101]]; Orafit [[101, 102]].
+id = "main-gap.sequence-repeated-nextval"
+title = "Repeated NEXTVAL advances only once per row"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT bs_seq.NEXTVAL AS first_value, bs_seq.NEXTVAL AS second_value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed rows: Oracle [[1]]; Orafit [[1], [2]].
+id = "main-gap.fetch-fraction"
+title = "FETCH truncates fractional row counts"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST 1.9 ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed rows: Oracle [[A ], [A  ]]; Orafit [[A ]].
+# Observed JDBC metadata: Oracle jdbcType=12, precision=3; Orafit jdbcType=1, precision=2.
+id = "main-gap.union-char-padding"
+title = "union char padding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('A' AS CHAR(2)) AS value FROM dual UNION SELECT CAST('A' AS CHAR(3)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed rows: Oracle []; Orafit [[1], [2], [3], [4], [5], [6], [7], [8]].
+id = "main-gap.fetch-null"
+title = "fetch null"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST NULL ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.fetch-negative"
+title = "fetch negative"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST -1 ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.fetch-zero"
+title = "P2 boundary: fetch-zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST 0 ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.fetch-default"
+title = "P2 boundary: fetch-default"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST ROW ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.fetch-offset-fractions"
+title = "P2 boundary: fetch-offset-fractions"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno OFFSET 1.9 ROWS FETCH NEXT 2.9 ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.fetch-with-ties"
+title = "P2 boundary: fetch-with-ties"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno FROM bs_emp ORDER BY deptno FETCH FIRST 1.9 ROWS WITH TIES
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.fetch-set"
+title = "P2 boundary: fetch-set"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 AS value FROM dual UNION ALL SELECT 2 AS value FROM dual ORDER BY value FETCH FIRST 1.9 ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.union-char-same-width"
+title = "P2 boundary: union-char-same-width"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('A' AS CHAR(3)) AS value FROM dual UNION SELECT CAST('A' AS CHAR(3)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.union-char-varchar"
+title = "P2 boundary: union-char-varchar"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST('A' AS CHAR(3)) AS value FROM dual UNION SELECT CAST('A' AS VARCHAR2(3)) AS value FROM dual ORDER BY value
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.sequence-rows"
+title = "P2 boundary: sequence-rows"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT empno, bs_seq.NEXTVAL AS a, bs_seq.NEXTVAL AS b FROM bs_emp WHERE empno <= 3
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.sequence-currval-first"
+title = "P2 boundary: sequence-currval-first"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT bs_seq.CURRVAL AS a, bs_seq.NEXTVAL AS b, bs_seq.NEXTVAL+1 AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.sequence-empty"
+title = "P2 boundary: sequence-empty"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT bs_seq.NEXTVAL AS a, bs_seq.NEXTVAL AS b FROM bs_emp WHERE 1=0
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.fetch-bind"
+title = "P2 boundary: fetch-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1.9"
+
+[[case.bind]]
+mode = "in"
+index = 2
+type = "DECIMAL"
+value = "2.9"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.fetch-null-bind"
+title = "P2 boundary: fetch-null-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST ? ROWS ONLY
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+null = true
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "p2.reject-fetch-percent"
+title = "fetch percent"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST 10 PERCENT ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "FETCH_PERCENT"
+reason = "Deferred: exact Oracle semantics require a separate design; see incompatibility-decisions.md"
+
+
+
+[[case]]
+id = "p2.sequence-name-case"
+title = "P2 boundary: sequence-name-case"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT bs_seq.NEXTVAL AS a, BS_SEQ.NEXTVAL AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.reject-unknown-set-char-width"
+title = "Physical CHAR set width must be explicit"
+kind = "query"
+compare = "unordered"
+sql = """
+SELECT fixed_value AS value FROM bs_byte_length
+UNION SELECT CAST('A' AS CHAR(4)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "SET_CHAR_WIDTH"
+reason = "Physical CHAR set widths need explicit casts on every branch; no padding approximation"
+
+[[case]]
+# Observed 実行結果: Oracle ORA-02287; Orafit 成功.
+id = "main-gap.sequence-in-where"
+title = "NEXTVAL is forbidden in a WHERE clause"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE bs_seq.NEXTVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-currval"
+title = "P3 validation: sequence-where-currval"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE bs_seq.CURRVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-case"
+title = "P3 validation: sequence-where-case"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE Bs_Seq.NeXtVaL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-quoted"
+title = "P3 validation: sequence-where-quoted"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE "BS_SEQ"."NEXTVAL" > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-inline"
+title = "P3 validation: sequence-where-inline"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM (SELECT empno FROM bs_emp WHERE bs_seq.NEXTVAL > 0) q
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-exists"
+title = "P3 validation: sequence-where-exists"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE EXISTS (SELECT 1 FROM dual WHERE bs_seq.NEXTVAL > 0)
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-cte"
+title = "P3 validation: sequence-where-cte"
+kind = "query"
+compare = "error"
+sql = """
+WITH q AS (SELECT empno FROM bs_emp WHERE bs_seq.NEXTVAL > 0) SELECT empno FROM q
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-repeated"
+title = "P3 validation: sequence-where-repeated"
+kind = "query"
+compare = "error"
+sql = """
+SELECT bs_seq.NEXTVAL AS a, bs_seq.NEXTVAL AS b FROM dual WHERE bs_seq.NEXTVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-where-unreachable"
+title = "P3 validation: sequence-where-unreachable"
+kind = "query"
+compare = "error"
+sql = """
+SELECT empno FROM bs_emp WHERE 1=0 AND bs_seq.NEXTVAL > 0
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 2287
+
+[case.orafit]
+mode = "same"
+code = "SEQUENCE_WHERE"
+
+[[case]]
+id = "p3.sequence-named-column"
+title = "P3 validation: sequence-named-column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 AS value FROM (SELECT 1 AS "NEXTVAL" FROM dual) q WHERE "NEXTVAL" = 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.sequence-qualified-column"
+title = "P3 validation: sequence-qualified-column"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 AS value FROM (SELECT 1 AS "NEXTVAL" FROM dual) q WHERE q."NEXTVAL" = 1
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

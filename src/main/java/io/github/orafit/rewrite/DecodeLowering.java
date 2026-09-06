@@ -162,6 +162,10 @@ final class DecodeLowering {
     }
 
     private static boolean numericArithmetic(Expression value) {
+        if (value instanceof Function function
+                && "orafit.number_value".equalsIgnoreCase(function.getName())
+                && function.getParameters() != null
+                && function.getParameters().size() == 1) return true;
         if (!(value instanceof BinaryExpression binary)
                 || !(binary instanceof Addition
                         || binary instanceof Subtraction

@@ -12,6 +12,19 @@ final class JdbcErrors {
 
     static SQLException fromTranslation(TranslationException failure) {
         return switch (failure.code()) {
+            case "SEQUENCE_WHERE" -> new SQLException(failure.getMessage(), "42000", 2287, failure);
+            case "EXTRACT_FIELD" -> new SQLException(failure.getMessage(), "99999", 30076, failure);
+            case "COALESCE_ARITY" ->
+                    new SQLException(
+                            "ORA-00938: not enough arguments for function", "42000", 938, failure);
+            case "SET_DATATYPE" ->
+                    new SQLException(
+                            "ORA-01790: expression must have same datatype as corresponding expression",
+                            "42000",
+                            1790,
+                            failure);
+            case "FUNCTION_DATATYPE", "NULLIF_FIRST_NULL" ->
+                    new SQLException("ORA-00932: inconsistent datatypes", "42000", 932, failure);
             case "MERGE_ON_COLUMN_UPDATE" ->
                     new SQLException(
                             "ORA-38104: MERGE cannot update a target column referenced by ON",

@@ -1,0 +1,155 @@
+version = 1
+feature = "p2-deferred"
+
+# Investigation probes, deliberately outside cases/ (not a supported CI claim).
+# Red evidence: /tmp/orafit-p2-red.log and /tmp/orafit-p2-oracle-3.log.
+
+[[case]]
+# Observed rows: Oracle [[0]]; Orafit [[null]].
+id = "main-gap.stddev-single-row"
+title = "STDDEV of one row returns zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT STDDEV(1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+
+[[case]]
+id = "p2.stddev-empty"
+title = "P2 boundary: stddev-empty"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT STDDEV(sal) AS value FROM bs_emp WHERE 1=0
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.stddev-null"
+title = "P2 boundary: stddev-null"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT STDDEV(CAST(NULL AS NUMBER)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.stddev-grouped"
+title = "P2 boundary: stddev-grouped"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT deptno, STDDEV(sal) AS value FROM bs_emp GROUP BY deptno ORDER BY deptno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.stddev-two"
+title = "P2 boundary: stddev-two"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT STDDEV(n) AS value FROM (SELECT 1 AS n FROM dual UNION ALL SELECT 2 AS n FROM dual)
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.stddev-distinct"
+title = "P2 boundary: stddev-distinct"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT STDDEV(DISTINCT deptno) AS value FROM bs_emp
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.stddev-window"
+title = "P2 boundary: stddev-window"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, STDDEV(sal) OVER (ORDER BY empno ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.timestamp-date-difference"
+title = "timestamp date difference"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TIMESTAMP '2024-01-02 01:00:00' - DATE '2024-01-01' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.fetch-percent"
+title = "fetch percent"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno FROM bs_emp ORDER BY empno FETCH FIRST 10 PERCENT ROWS ONLY
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+

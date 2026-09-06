@@ -410,3 +410,657 @@ outcome = "success"
 mode = "reject"
 code = "TIMESTAMP_PRECISION"
 reason = "PostgreSQL timestamps have microsecond precision; Orafit rejects Oracle TIMESTAMP literals above six fractional digits instead of silently rounding."
+
+[[case]]
+id = "datetime.add-months-fraction"
+title = "ADD_MONTHS truncates fractional month counts"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(DATE '2024-01-15', 1.9) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.add-months-negative-fraction"
+title = "ADD_MONTHS truncates negative month counts and retains time"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(TIMESTAMP '2024-03-31 12:34:56', -1.9) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "datetime.add-months-bound-fraction"
+title = "ADD_MONTHS accepts a numeric month bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ADD_MONTHS(DATE '2024-01-31', ?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "DECIMAL"
+mode = "in"
+value = "1.9"
+
+[[case]]
+id = "p1.date-subtraction"
+title = "DATE subtraction returns a NUMBER of days"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT DATE '2024-03-02' - DATE '2024-03-01' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.timestamp-cast-date"
+title = "CAST TIMESTAMP AS DATE discards fractional seconds"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(TIMESTAMP '2024-01-02 03:04:05.123456' AS DATE) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.to-date-trailing-data"
+title = "TO_DATE rejects trailing data beyond the format"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-01-02garbage', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1830
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-difference-time"
+title = "P1 boundary: date-difference-time"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-01-02 01:00:00','YYYY-MM-DD HH24:MI:SS') - TO_DATE('2024-01-01 00:00:00','YYYY-MM-DD HH24:MI:SS') AS a, DATE '2024-01-01' - DATE '2024-01-02' AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-cast-rounding"
+title = "P1 boundary: date-cast-rounding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(TIMESTAMP '2024-01-02 23:59:59.999999' AS DATE) AS a, CAST(CAST(NULL AS TIMESTAMP) AS DATE) AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-variable-digits"
+title = "P1 boundary: date-variable-digits"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-1-2','YYYY-MM-DD') AS a, TO_DATE('20240102','YYYY-MM-DD') AS b, TO_DATE('2024/01/02 ','YYYY-MM-DD') AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-suffix-digits"
+title = "P1 boundary: date-suffix-digits"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-01-021','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1830
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-suffix-time"
+title = "P1 boundary: date-suffix-time"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-01-02 03:04:05oops','YYYY-MM-DD HH24:MI:SS') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1830
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-columns"
+title = "P1 boundary: date-columns"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, hired - DATE '2020-01-01' AS value FROM bs_emp ORDER BY empno
+"""
+
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.date-cast-bind"
+title = "P1 boundary: date-cast-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(? AS DATE) AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "TIMESTAMP"
+value = "2024-01-02 23:59:59.999999"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed vendor error code: Oracle 1839; Orafit 1861.
+id = "main-gap.date-invalid-day"
+title = "TO_DATE invalid calendar date vendor error code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-02-30', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1839
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed vendor error code: Oracle 30076; Orafit 0.
+id = "main-gap.date-extract-hour"
+title = "EXTRACT HOUR from DATE vendor error code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT EXTRACT(HOUR FROM DATE '2024-01-02') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 30076
+
+[case.orafit]
+mode = "same"
+code = "EXTRACT_FIELD"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.next-day"
+title = "next day"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NEXT_DAY(DATE '2024-01-01','MONDAY') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.date-trunc-century"
+title = "date trunc century"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(DATE '2000-06-01','CC') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.date-leap-valid"
+title = "P2 boundary: date-leap-valid"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-02-29', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.date-leap-invalid"
+title = "P2 boundary: date-leap-invalid"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2023-02-29', 'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1839
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.date-april-invalid"
+title = "P2 boundary: date-april-invalid"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-04-31', 'FXYYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1839
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.date-extract-minute"
+title = "P2 boundary: date-extract-minute"
+kind = "query"
+compare = "error"
+sql = """
+SELECT EXTRACT(MINUTE FROM CAST(TIMESTAMP '2024-01-01 12:34:56' AS DATE)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 30076
+
+[case.orafit]
+mode = "same"
+code = "EXTRACT_FIELD"
+
+[[case]]
+id = "p2.timestamp-extract-hour"
+title = "P2 boundary: timestamp-extract-hour"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT EXTRACT(HOUR FROM TIMESTAMP '2024-01-01 12:34:56') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.next-day-week"
+title = "P2 boundary: next-day-week"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT NEXT_DAY(DATE '2024-01-01', 'SUN') AS a, NEXT_DAY(TIMESTAMP '2024-01-01 12:34:56.9', 'tuesday') AS b, NEXT_DAY(CAST(NULL AS DATE), 'MON') AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.next-day-invalid"
+title = "P2 boundary: next-day-invalid"
+kind = "query"
+compare = "error"
+sql = """
+SELECT NEXT_DAY(DATE '2024-01-01', 'BAD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1846
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.century-boundaries"
+title = "P2 boundary: century-boundaries"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TRUNC(DATE '1900-12-31','CC') AS a, TRUNC(DATE '1901-01-01','CC') AS b, TRUNC(DATE '2001-01-01','SCC') AS c, TRUNC(DATE '0001-01-01','CC') AS d FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "p2.reject-timestamp-date-difference"
+title = "timestamp date difference"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TIMESTAMP '2024-01-02 01:00:00' - DATE '2024-01-01' AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "reject"
+stage = "translation"
+code = "TIMESTAMP_DIFFERENCE"
+reason = "Deferred: exact Oracle semantics require a separate design; see incompatibility-decisions.md"
+
+[[case]]
+# Observed 実行結果: Oracle ORA-01841; Orafit 成功.
+id = "main-gap.to-date-year-zero"
+title = "to date year zero"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0000-01-01','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1841
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-fx"
+title = "P3 validation: date-year-zero-fx"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0000-01-01','FXYYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1841
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-month"
+title = "P3 validation: date-year-zero-month"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0000-13-01','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1843
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-day"
+title = "P3 validation: date-year-zero-day"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0000-02-30','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1841
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-suffix"
+title = "P3 validation: date-year-zero-suffix"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0000-01-01x','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1841
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-bind"
+title = "P3 validation: date-year-zero-bind"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE(?,'YYYY-MM-DD') AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "VARCHAR"
+value = "0000-01-01"
+
+[case.oracle]
+outcome = "error"
+error_code = 1841
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-one"
+title = "P3 validation: date-year-one"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('0001-01-01','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-null"
+title = "P3 validation: date-year-null"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE(NULL,'YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-time-zero"
+title = "P3 validation: date-year-time-zero"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_DATE('2024-01-01 00:00:00','YYYY-MM-DD HH24:MI:SS') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-day-zero"
+title = "P3 validation: date-year-zero-day-zero"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0000-01-00','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1847
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-day-large"
+title = "P3 validation: date-year-zero-day-large"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0000-01-32','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1847
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-month-invalid"
+title = "P3 validation: date-month-invalid"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('2024-13-01','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1843
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-compact"
+title = "P3 validation: date-year-zero-compact"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('00000101','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1861
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p3.date-year-zero-short"
+title = "P3 validation: date-year-zero-short"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_DATE('0-1-1','YYYY-MM-DD') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1841
+
+[case.orafit]
+mode = "same"

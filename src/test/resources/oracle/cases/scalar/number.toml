@@ -324,3 +324,857 @@ outcome = "success"
 
 [case.orafit]
 mode = "same"
+
+[[case]]
+id = "number.mod-zero"
+title = "MOD with a zero divisor"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MOD(7, 0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-group-separator"
+title = "TO_NUMBER without a format rejects group separators"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('1,234') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.mod-character"
+title = "MOD implicitly converts character arguments to NUMBER"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MOD('7','3') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-nan"
+title = "TO_NUMBER rejects NaN with ORA-01722"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('NaN') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-hex"
+title = "TO_NUMBER rejects hexadecimal prefixes"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('0x10') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-reject-binary"
+title = "TO_NUMBER rejects binary prefixes"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('0b10') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-reject-octal"
+title = "TO_NUMBER rejects octal prefixes"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('0o10') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-reject-underscore"
+title = "TO_NUMBER rejects digit separators"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('1_234') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-reject-infinity"
+title = "TO_NUMBER rejects Infinity with ORA-01722"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('Infinity') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-invalid-bind"
+title = "TO_NUMBER rejects grouped numeric text supplied as a JDBC bind"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER(?) AS value FROM dual
+"""
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "1,234"
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.implicit-number-reject-group"
+title = "Implicit arithmetic conversion rejects grouped numeric text"
+kind = "query"
+compare = "error"
+sql = """
+SELECT '1,234' + 0 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.mod-signs-fractions-nulls"
+title = "MOD preserves sign, fractional remainder, and NULL behavior"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CASE WHEN MOD(-7, 3) = -1 AND MOD(7, -3) = 1
+ AND MOD(7.5, 2) = 1.5 AND MOD(0, 0) = 0
+ AND MOD(NULL, 0) IS NULL AND MOD(7, NULL) IS NULL
+ AND MOD('', 3) IS NULL THEN 1 ELSE 0 END AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.mod-invalid-character"
+title = "MOD preserves invalid-number conversion errors"
+kind = "query"
+compare = "error"
+sql = """
+SELECT MOD('bad', 3) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "number.to-number-signed-exponent"
+title = "TO_NUMBER accepts surrounding spaces and a signed decimal exponent"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER(' +12.5e-1 ') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-leading-dot"
+title = "TO_NUMBER accepts an omitted integer part"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER('.5') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-trailing-dot"
+title = "TO_NUMBER accepts an omitted fractional part"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER('1.') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-positive-exponent"
+title = "TO_NUMBER accepts a negative mantissa and positive exponent"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER('-1E+2') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-spaces"
+title = "TO_NUMBER rejects a nonempty string containing only spaces"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER('   ') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-empty"
+title = "TO_NUMBER treats the empty string as NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER('') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-null"
+title = "TO_NUMBER propagates NULL"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT TO_NUMBER(NULL) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-tab-padding"
+title = "TO_NUMBER rejects tab-padded numeric text"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER(CHR(9) || '12' || CHR(9)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.to-number-newline-padding"
+title = "TO_NUMBER rejects newline-padded numeric text"
+kind = "query"
+compare = "error"
+sql = """
+SELECT TO_NUMBER(CHR(10) || '12' || CHR(10)) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.mod-bind"
+title = "MOD preserves bind order and Oracle JDBC numeric metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MOD(?, ?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "7.5"
+
+[[case.bind]]
+index = 2
+type = "INTEGER"
+mode = "in"
+value = 2
+
+[[case]]
+id = "number.mod-column"
+title = "MOD accepts NUMBER columns and preserves JDBC metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MOD(sal, 300) AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.mod-negative-decimal"
+title = "MOD negative decimal literal preserves value and JDBC metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT MOD(-7.5, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.ceil-character"
+title = "CEIL implicit numeric conversion preserves NUMBER metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CEIL('1.2') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.ceil-negative-decimal"
+title = "CEIL accepts a negative decimal string and preserves NUMBER metadata"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CEIL('-1.2') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "number.ceil-bind"
+title = "CEIL accepts a bound character number"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CEIL(?) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case.bind]]
+index = 1
+type = "VARCHAR"
+mode = "in"
+value = "1.2"
+
+[[case]]
+id = "number.ceil-invalid"
+title = "CEIL preserves invalid-number conversion errors"
+kind = "query"
+compare = "error"
+sql = """
+SELECT CEIL('bad') AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1722
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.number-division"
+title = "NUMBER division precision"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1 / 3 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-decimal"
+title = "division decimal"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1.0 / 7 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-magnitudes"
+title = "P1 boundary: division-magnitudes"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 10/3 AS a, 100/3 AS b, 1/300 AS c, -1/7 AS d, 22/7 AS e, 1/8 AS f FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-columns"
+title = "P1 boundary: division-columns"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT empno, sal / 7 AS value FROM bs_emp ORDER BY empno
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-nested"
+title = "P1 boundary: division-nested"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT (1/3)/7 AS a, 1/(7/3) AS b, 0/3 AS c, CAST(NULL AS NUMBER)/3 AS d FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-zero"
+title = "P1 boundary: division-zero"
+kind = "query"
+compare = "error"
+sql = """
+SELECT 1/0 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p1.division-bind"
+title = "P1 boundary: division-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT ? / ? AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1"
+
+[[case.bind]]
+mode = "in"
+index = 2
+type = "DECIMAL"
+value = "7"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+# Observed 実行結果: Oracle ORA-01426; Orafit 成功.
+id = "main-gap.number-overflow"
+title = "NUMBER arithmetic overflow"
+kind = "query"
+compare = "error"
+sql = """
+SELECT 1e125 * 1e125 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1426
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed rows: Oracle [[0]]; Orafit [[1e-260]].
+id = "main-gap.number-underflow"
+title = "NUMBER arithmetic underflow"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1e-130 * 1e-130 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed vendor error code: Oracle 1428; Orafit 0.
+id = "main-gap.sqrt-negative"
+title = "SQRT domain error preserves the Oracle vendor code"
+kind = "query"
+compare = "error"
+sql = """
+SELECT SQRT(-1) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1428
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed rows: Oracle [[1.23456789012345678901234567890123456789]]; Orafit [[1.234567890123456789012345678901234567890123456789]].
+# Observed JDBC metadata: Oracle scale=-127; Orafit scale=0.
+id = "main-gap.number-cast-rounding"
+title = "number cast rounding"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(1.234567890123456789012345678901234567890123456789 AS NUMBER) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+# Observed 実行結果: Oracle 成功; Orafit エラー.
+id = "main-gap.remainder-ties"
+title = "REMAINDER execution"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REMAINDER(7, 2) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+
+[[case]]
+id = "p2.number-range"
+title = "P2 boundary: number-range"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 1e-130 * 1 AS a, 1e-130 * 0.1 AS b, -1e125 * 1 AS c FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-negative-overflow"
+title = "P2 boundary: number-negative-overflow"
+kind = "query"
+compare = "error"
+sql = """
+SELECT -1e125 * 100 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1426
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-cast-signs"
+title = "P2 boundary: number-cast-signs"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(-1.234567890123456789012345678901234567890123456789 AS NUMBER) AS a, CAST(1234567890123456789012345678901234567890123456789 AS NUMBER) AS b FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-cast-null"
+title = "P2 boundary: number-cast-null"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(NULL AS NUMBER) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.sqrt-positive"
+title = "P2 boundary: sqrt-positive"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT SQRT(0) AS a, SQRT(4) AS b, SQRT(2) AS c, SQRT(NULL) AS d FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.remainder-signs"
+title = "P2 boundary: remainder-signs"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT REMAINDER(5,2) AS a, REMAINDER(-7,2) AS b, REMAINDER(7,-2) AS c, REMAINDER(-5,-2) AS d, REMAINDER(1.5,1) AS e, REMAINDER(NULL,2) AS f FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.remainder-zero"
+title = "P2 boundary: remainder-zero"
+kind = "query"
+compare = "error"
+sql = """
+SELECT REMAINDER(1,0) AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "error"
+error_code = 1476
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.multiply-bind"
+title = "P2 boundary: multiply-bind"
+kind = "query"
+compare = "error"
+sql = """
+SELECT ? * ? AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1e125"
+
+[[case.bind]]
+mode = "in"
+index = 2
+type = "DECIMAL"
+value = "1e125"
+
+[case.oracle]
+outcome = "error"
+error_code = 1426
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.number-cast-bind"
+title = "P2 boundary: number-cast-bind"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT CAST(? AS NUMBER) AS value FROM dual
+"""
+
+[[case.bind]]
+mode = "in"
+index = 1
+type = "DECIMAL"
+value = "1.234567890123456789012345678901234567890123456789"
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"
+
+[[case]]
+id = "p2.multiply-integer-range"
+title = "P2 boundary: multiply-integer-range"
+kind = "query"
+compare = "ordered"
+sql = """
+SELECT 50000 * 50000 AS value FROM dual
+"""
+
+[case.oracle]
+outcome = "success"
+
+[case.orafit]
+mode = "same"

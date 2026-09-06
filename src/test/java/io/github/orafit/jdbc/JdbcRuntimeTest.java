@@ -267,6 +267,14 @@ public final class JdbcRuntimeTest {
                     (proxy, method, args) ->
                             switch (method.getName()) {
                                 case "prepareStatement" -> {
+                                    if (((String) args[0]).contains("pg_catalog.to_regclass")) {
+                                        // Catalog lookup has its own statement and binds; the
+                                        // recorder below observes only the application's statement.
+                                        yield proxy(
+                                                PreparedStatement.class,
+                                                (lookup, lookupMethod, lookupArgs) ->
+                                                        defaultValue(lookupMethod.getReturnType()));
+                                    }
                                     preparedSql = (String) args[0];
                                     yield prepared;
                                 }

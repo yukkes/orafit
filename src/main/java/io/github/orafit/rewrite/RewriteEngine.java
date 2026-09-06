@@ -2,6 +2,7 @@ package io.github.orafit.rewrite;
 
 import io.github.orafit.parse.ParserAdapter;
 import io.github.orafit.rewrite.hierarchy.HierarchyLoweringRule;
+import io.github.orafit.translation.ColumnTypeResolver;
 import io.github.orafit.translation.Feature;
 import io.github.orafit.translation.TranslationException;
 
@@ -80,6 +81,12 @@ public final class RewriteEngine {
      * @throws TranslationException when a recognized form cannot be lowered safely
      */
     public Result rewrite(Statement statement) throws TranslationException {
+        return rewrite(statement, ColumnTypeResolver.NONE);
+    }
+
+    public Result rewrite(Statement statement, ColumnTypeResolver resolver)
+            throws TranslationException {
+        SequenceProjectionRule.validateWhere(statement, resolver);
         validateInListLimit(statement);
         SequenceRestartRule.Result sequenceResult = sequenceRestart.rewrite(statement);
         boolean changed = rewriteUnique(statement);
@@ -88,7 +95,8 @@ public final class RewriteEngine {
         changed |= normalizeDerivedAliases(statement);
         changed |= normalizeDuplicateJoinAliases(statement);
         changed |= normalizeSingleRowAggregateOrder(statement);
-        changed |= scalar.rewrite(statement);
+        changed |= new SequenceProjectionRule().rewrite(statement, resolver);
+        changed |= scalar.rewrite(statement, resolver);
         changed |= functions.rewrite(statement);
         changed |= normalizeRowLimiting(statement);
         changed |= normalizeUpdateTarget(statement);
@@ -118,9 +126,25 @@ public final class RewriteEngine {
         }
     }
 
-    private static boolean normalizeRowLimiting(Statement statement) {
+    private static boolean normalizeRowLimiting(Statement statement) throws TranslationException {
         boolean changed = false;
         for (Select select : ParserAdapter.nodes(statement, Select.class)) {
+            if (select.getFetch() != null
+                    && select.getFetch().getFetchParameters().stream()
+                            .anyMatch("PERCENT"::equalsIgnoreCase))
+                throw new TranslationException(
+                        "FETCH_PERCENT",
+                        "FETCH PERCENT requires counting the complete selected row set and is unsupported");
+            if (select.getFetch() != null
+                    && select.getFetch().getExpression() != null
+                    && !select.getFetch().getFetchParameters().stream()
+                            .anyMatch("PERCENT"::equalsIgnoreCase)) {
+                select.getFetch()
+                        .setExpression(
+                                new Function(
+                                        "orafit.row_count", select.getFetch().getExpression()));
+                changed = true;
+            }
             if (select.getOffset() == null || select.getOffset().getOffset() == null) continue;
             select.getOffset()
                     .setOffset(new Function("orafit.row_offset", select.getOffset().getOffset()));
